@@ -43,6 +43,57 @@ public class JuffmanTest {
         }
     }
 
+    // source: https://opendsa-server.cs.vt.edu/ODSA/Books/CS3/html/Huffman.html
+    @Test
+    public void generateHuffmanTree() {
+        int[] frequencies = new int[256];
+        frequencies['C'] = 32;
+        frequencies['D'] = 42;
+        frequencies['E'] = 120;
+        frequencies['K'] = 7;
+        frequencies['L'] = 42;
+        frequencies['M'] = 24;
+        frequencies['U'] = 37;
+        frequencies['Z'] = 2;
+
+        HuffmanNode root = Juffman.generateHuffmanTree(frequencies);
+
+        HuffmanNode cNode = new HuffmanNode(Byte.valueOf((byte)'C'), 32);
+        HuffmanNode dNode = new HuffmanNode(Byte.valueOf((byte)'D'), 42);
+        HuffmanNode eNode = new HuffmanNode(Byte.valueOf((byte)'E'), 120);
+        HuffmanNode kNode = new HuffmanNode(Byte.valueOf((byte)'K'), 7);
+        HuffmanNode lNode = new HuffmanNode(Byte.valueOf((byte)'L'), 42);
+        HuffmanNode mNode = new HuffmanNode(Byte.valueOf((byte)'M'), 24);
+        HuffmanNode uNode = new HuffmanNode(Byte.valueOf((byte)'U'), 37);
+        HuffmanNode zNode = new HuffmanNode(Byte.valueOf((byte)'Z'), 2);
+
+        HuffmanNode expectedRoot = new HuffmanNode(
+            null, 306, eNode, new HuffmanNode(
+                null,
+                186,
+                new HuffmanNode(null, 79, uNode, dNode),
+                new HuffmanNode(
+                    null,
+                    107,
+                    lNode,
+                    new HuffmanNode(
+                        null,
+                        65,
+                        cNode,
+                        new HuffmanNode(
+                            null,
+                            33,
+                            new HuffmanNode(null, 9, zNode, kNode),
+                            mNode
+                        )
+                    )
+                )
+            )
+        );
+
+        assertEquals(root, expectedRoot);
+    }
+
     private int getTotalCount(int[] frequencies) {
         int sum = 0;
         for (int f : frequencies) {
