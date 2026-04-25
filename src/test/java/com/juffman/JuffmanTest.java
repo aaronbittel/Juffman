@@ -1,6 +1,9 @@
 package com.juffman;
 
-import java.util.BitSet;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -12,24 +15,24 @@ public class JuffmanTest {
     @Test
     public void countFrequeciesEmpty() {
         String empty = "";
-        int[] frequencies = Juffman.countFrequencies(empty.getBytes());
+        long[] frequencies = Juffman.countFrequencies(empty.getBytes());
         assertEquals(getTotalCount(frequencies), empty.length());
-        for (int f : frequencies) {
-            assertEquals(f, 0);
+        for (long f : frequencies) {
+            assertEquals(f, 0L);
         }
     }
 
     @Test
     public void countFrequeciesString() {
         String str = "AAAaaB";
-        int[] frequencies = Juffman.countFrequencies(str.getBytes());
+        long[] frequencies = Juffman.countFrequencies(str.getBytes());
         assertEquals(getTotalCount(frequencies), str.length());
         for (int i = 0; i < frequencies.length; ++i) {
-            int f = frequencies[i];
-            if (i == 'A') assertEquals(f, 3);
-            else if (i == 'a') assertEquals(f, 2);
-            else if (i == 'B') assertEquals(f, 1);
-            else assertEquals(f, 0);
+            long f = frequencies[i];
+            if (i == 'A') assertEquals(f, 3L);
+            else if (i == 'a') assertEquals(f, 2L);
+            else if (i == 'B') assertEquals(f, 1L);
+            else assertEquals(f, 0L);
         }
     }
 
@@ -37,11 +40,11 @@ public class JuffmanTest {
     public void countFrequeciesUnicode() {
         String unicode = "€é漢";
         byte[] bytes = unicode.getBytes();
-        int[] frequencies = Juffman.countFrequencies(unicode.getBytes());
+        long[] frequencies = Juffman.countFrequencies(unicode.getBytes());
         assertEquals(getTotalCount(frequencies), bytes.length);
         for (byte b : bytes) {
             int unsigned = Byte.toUnsignedInt(b);
-            assertEquals(1, frequencies[unsigned]);
+            assertEquals(1L, frequencies[unsigned]);
         }
     }
 
@@ -101,16 +104,65 @@ public class JuffmanTest {
         assertEquals(letterCodes['Z'], new HuffmanCode("111100"));
     }
 
-    private int getTotalCount(int[] frequencies) {
-        int sum = 0;
-        for (int f : frequencies) {
+    @Test
+    public void writeFrequencyTableHeader() throws Exception {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try (DataOutputStream out = new DataOutputStream(baos)) {
+            Juffman.writeFrequencyTable(sampleFrequencies(), out);
+        }
+
+        ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
+        try (DataInputStream in = new DataInputStream(bais)) {
+            // check header
+            assertEquals('H', in.readByte());
+            assertEquals('U', in.readByte());
+            assertEquals('F', in.readByte());
+
+            // check FrequencyFormat BYTE
+            assertEquals(1, in.readByte());
+            // check unique byte count
+            assertEquals(8, in.readByte());
+
+            // check frequencies
+            // frequencies['C'] = 32;
+            assertEquals('C', in.readByte());
+            assertEquals(32, in.readByte());
+            // frequencies['D'] = 42;
+            assertEquals('D', in.readByte());
+            assertEquals(42, in.readByte());
+            // frequencies['E'] = 120;
+            assertEquals('E', in.readByte());
+            assertEquals(120, in.readByte());
+            // frequencies['K'] = 7;
+            assertEquals('K', in.readByte());
+            assertEquals(7, in.readByte());
+            // frequencies['L'] = 42;
+            assertEquals('L', in.readByte());
+            assertEquals(42, in.readByte());
+            // frequencies['M'] = 24;
+            assertEquals('M', in.readByte());
+            assertEquals(24, in.readByte());
+            // frequencies['U'] = 37;
+            assertEquals('U', in.readByte());
+            assertEquals(37, in.readByte());
+            // frequencies['Z'] = 2;
+            assertEquals('Z', in.readByte());
+            assertEquals(2, in.readByte());
+
+            assertEquals(in.available(), 0);
+        }
+    }
+
+    private long getTotalCount(long[] frequencies) {
+        long sum = 0;
+        for (long f : frequencies) {
             sum += f;
         }
         return sum;
     }
 
-    private int[] sampleFrequencies() {
-        int[] frequencies = new int[256];
+    private long[] sampleFrequencies() {
+        long[] frequencies = new long[256];
         frequencies['C'] = 32;
         frequencies['D'] = 42;
         frequencies['E'] = 120;

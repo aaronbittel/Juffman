@@ -4,19 +4,19 @@ import java.util.Objects;
 
 class HuffmanNode {
     private Byte value;
-    private int count;
+    private long count;
 
     private HuffmanNode left;
     private HuffmanNode right;
 
-    public HuffmanNode(Byte value, int count, HuffmanNode left, HuffmanNode right) {
+    public HuffmanNode(Byte value, long count, HuffmanNode left, HuffmanNode right) {
         this.value = value;
         this.count = count;
         this.left = left;
         this.right = right;
     }
 
-    public HuffmanNode(Byte value, int count) {
+    public HuffmanNode(Byte value, long count) {
         this(value, count, null, null);
     }
 
@@ -42,7 +42,7 @@ class HuffmanNode {
         return Byte.toUnsignedInt(value);
     }
 
-    public int getCount() {
+    public long getCount() {
         return count;
     }
 
