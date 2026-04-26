@@ -1,5 +1,6 @@
 package com.juffman;
 
+import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
@@ -20,11 +21,21 @@ enum FrequencyFormat {
         void writeFrequency(long freq, DataOutputStream out) throws IOException {
             out.writeByte((byte)freq);
         }
+
+        @Override
+        long readFrequency(DataInputStream in) throws IOException {
+            return (long)in.readByte();
+        }
     },
     SHORT(2) {
         @Override
         void writeFrequency(long freq, DataOutputStream out) throws IOException {
             out.writeShort((short)freq);
+        }
+
+        @Override
+        long readFrequency(DataInputStream in) throws IOException {
+            return (long)in.readShort();
         }
     },
     INT(4) {
@@ -32,11 +43,21 @@ enum FrequencyFormat {
         void writeFrequency(long freq, DataOutputStream out) throws IOException {
             out.writeInt((int)freq);
         }
+
+        @Override
+        long readFrequency(DataInputStream in) throws IOException {
+            return (long)in.readInt();
+        }
     },
     LONG(8) {
         @Override
         void writeFrequency(long freq, DataOutputStream out) throws IOException {
             out.writeLong(freq);
+        }
+
+        @Override
+        long readFrequency(DataInputStream in) throws IOException {
+            return in.readLong();
         }
     };
 
@@ -51,6 +72,7 @@ enum FrequencyFormat {
     }
 
     abstract void writeFrequency(long freq, DataOutputStream out) throws IOException;
+    abstract long readFrequency(DataInputStream in) throws IOException;
 }
 
 public class Juffman {
@@ -178,6 +200,29 @@ public class Juffman {
             System.err.printf(
                 "ERROR: could not write to file `%s`: %s%n", filename, e.getMessage());
         }
+    }
+
+    public static long[] readFrequencyTable(DataInputStream in) throws IOException {
+        long[] frequencyTable = new long[256];
+        if (in.readByte() != 'H' || in.readByte() != 'U' || in.readByte() != 'F')
+            throw new IllegalStateException("Expected magic value");
+
+        FrequencyFormat format = switch((int)in.readByte()) {
+            case 1 -> FrequencyFormat.BYTE;
+            case 2 -> FrequencyFormat.SHORT;
+            case 4 -> FrequencyFormat.INT;
+            case 8 -> FrequencyFormat.LONG;
+            default -> throw new IllegalStateException("Unknown FrequencyFormat");
+        };
+
+        int size = in.readByte();
+
+        for (int i = 0; i < size; ++i) {
+            int index = Byte.toUnsignedInt(in.readByte());
+            frequencyTable[index] = format.readFrequency(in);
+        }
+
+        return frequencyTable;
     }
 
     public static void dumpFrequencies(int[] frequencies, String filename) {

@@ -5,8 +5,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
@@ -150,6 +151,20 @@ public class JuffmanTest {
             assertEquals(2, in.readByte());
 
             assertEquals(in.available(), 0);
+        }
+    }
+
+    @Test
+    public void writeAndReadFrequencyHeader() throws Exception {
+        long[] frequencyTableExpected = sampleFrequencies();
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try(DataOutputStream out = new DataOutputStream(baos)) {
+            Juffman.writeFrequencyTable(frequencyTableExpected, out);
+        }
+        ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
+        try(DataInputStream in = new DataInputStream(bais)) {
+            long[] frequencyTableActual = Juffman.readFrequencyTable(in);
+            assertArrayEquals(frequencyTableExpected, frequencyTableActual);
         }
     }
 
