@@ -14,67 +14,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-enum FrequencyFormat {
-
-    BYTE(1) {
-        @Override
-        void writeFrequency(long freq, DataOutputStream out) throws IOException {
-            out.writeByte((byte)freq);
-        }
-
-        @Override
-        long readFrequency(DataInputStream in) throws IOException {
-            return (long)in.readByte();
-        }
-    },
-    SHORT(2) {
-        @Override
-        void writeFrequency(long freq, DataOutputStream out) throws IOException {
-            out.writeShort((short)freq);
-        }
-
-        @Override
-        long readFrequency(DataInputStream in) throws IOException {
-            return (long)in.readShort();
-        }
-    },
-    INT(4) {
-        @Override
-        void writeFrequency(long freq, DataOutputStream out) throws IOException {
-            out.writeInt((int)freq);
-        }
-
-        @Override
-        long readFrequency(DataInputStream in) throws IOException {
-            return (long)in.readInt();
-        }
-    },
-    LONG(8) {
-        @Override
-        void writeFrequency(long freq, DataOutputStream out) throws IOException {
-            out.writeLong(freq);
-        }
-
-        @Override
-        long readFrequency(DataInputStream in) throws IOException {
-            return in.readLong();
-        }
-    };
-
-    private final int length;
-
-    FrequencyFormat(int length) {
-        this.length = length;
-    }
-
-    public int getLength() {
-        return length;
-    }
-
-    abstract void writeFrequency(long freq, DataOutputStream out) throws IOException;
-    abstract long readFrequency(DataInputStream in) throws IOException;
-}
-
 public class Juffman {
     public static void main(String[] args) {
         if (args.length == 0) {
@@ -83,20 +22,20 @@ public class Juffman {
             System.exit(1);
         }
 
-
         Path filepath = Path.of(args[0]);
         if (!Files.exists(filepath)) {
             System.err.printf("ERROR: '%s' does not exist", filepath);
             System.exit(1);
         }
         try {
-            byte[] content = Files.readAllBytes(filepath);
-            long[] frequencies = countFrequencies(content);
-            HuffmanNode root = generateHuffmanTree(frequencies);
-            // System.out.println(root.toStringIndent(0));
+            byte[] data = Files.readAllBytes(filepath);
+            FrequencyTable frequencyTable = FrequencyTable.fromBytes(data);
+            HuffmanNode root = generateHuffmanTree(frequencyTable);
 
             HuffmanCode[] codeTable = generateHuffmanCodesForLetters(root);
-            writeFrequencyTableToFile(frequencies, "encoded.txt");
+            String filename = "encoded.txt";
+            frequencyTable.writeFrequencyTableToFile(filename);
+            System.out.printf("[INFO] Generated `%s`%n", filename);
         } catch(IOException e) {
             System.err.printf("ERROR: reading '%s': %s%n", filepath, e.getMessage());
             System.exit(1);
@@ -129,18 +68,10 @@ public class Juffman {
         return codes;
     }
 
-    public static long[] countFrequencies(byte[] content) {
-        long[] frequencies = new long[256];
-        for (byte b : content) {
-            frequencies[Byte.toUnsignedInt(b)]++;
-        }
-        return frequencies;
-    }
-
-    public static HuffmanNode generateHuffmanTree(long[] frequencies) {
-        List<HuffmanNode> nodes = new ArrayList<>(frequencies.length);
-        for (int i = 0; i < frequencies.length; ++i) {
-            long freq = frequencies[i];
+    public static HuffmanNode generateHuffmanTree(FrequencyTable table) {
+        List<HuffmanNode> nodes = new ArrayList<>(table.getSize());
+        for (int i = 0; i < table.getSize(); ++i) {
+            long freq = table.get(i);
             if (freq == 0L) continue;
             nodes.add(new HuffmanNode(Byte.valueOf((byte)i), freq));
         }
@@ -157,80 +88,18 @@ public class Juffman {
         return nodes.getFirst();
     }
 
-    public static void writeFrequencyTable(
-        long[] frequencies, DataOutputStream out
-    ) throws IOException {
-        // magic
-        out.writeByte((byte)'H');
-        out.writeByte((byte)'U');
-        out.writeByte((byte)'F');
-
-        long max = Long.MIN_VALUE;
-        int size = 0;
-
-        for (long f : frequencies) {
-            if (f == 0) continue;
-            size++;
-            if (f > max) max = f;
-        }
-
-        FrequencyFormat format;
-        if (max <= Byte.MAX_VALUE) format = FrequencyFormat.BYTE;
-        else if (max <= Short.MAX_VALUE) format = FrequencyFormat.SHORT;
-        else if (max <= Integer.MAX_VALUE) format = FrequencyFormat.INT;
-        else format = FrequencyFormat.LONG;
-
-        out.writeByte(format.getLength()); // length of frequency fields
-        out.writeByte(size);               // count of unique bytes
-
-        for (int i = 0; i < frequencies.length; ++i) {
-            long freq = frequencies[i];
-            if (freq == 0) continue;
-            out.writeByte((byte)i);
-            format.writeFrequency(freq, out);
-        }
-    }
-
-    public static void writeFrequencyTableToFile(long[] frequencies, String filename) {
-        try (DataOutputStream out = new DataOutputStream(
-            new FileOutputStream(filename))
-        ) {
-            writeFrequencyTable(frequencies, out);
-        } catch(IOException e) {
-            System.err.printf(
-                "ERROR: could not write to file `%s`: %s%n", filename, e.getMessage());
-        }
-    }
-
-    public static long[] readFrequencyTable(DataInputStream in) throws IOException {
-        long[] frequencyTable = new long[256];
-        if (in.readByte() != 'H' || in.readByte() != 'U' || in.readByte() != 'F')
-            throw new IllegalStateException("Expected magic value");
-
-        FrequencyFormat format = switch((int)in.readByte()) {
-            case 1 -> FrequencyFormat.BYTE;
-            case 2 -> FrequencyFormat.SHORT;
-            case 4 -> FrequencyFormat.INT;
-            case 8 -> FrequencyFormat.LONG;
-            default -> throw new IllegalStateException("Unknown FrequencyFormat");
-        };
-
-        int size = in.readByte();
-
-        for (int i = 0; i < size; ++i) {
-            int index = Byte.toUnsignedInt(in.readByte());
-            frequencyTable[index] = format.readFrequency(in);
-        }
-
-        return frequencyTable;
-    }
-
-    public static void dumpFrequencies(int[] frequencies, String filename) {
+    public static void dumpFrequencies(FrequencyTable table, String filename) {
         try (FileWriter writer = new FileWriter(filename)) {
-            for (int i = 0; i < frequencies.length; ++i) {
-                int freq = frequencies[i];
-                if (freq == 0) continue;
-                writer.write(String.valueOf((char)i).repeat(freq));
+            for (int i = 0; i < table.getSize(); ++i) {
+                long freq = table.get(i);
+                if (freq > Integer.MAX_VALUE) {
+                    throw new IllegalStateException(
+                        "Frequency too large to materialize: " + freq +
+                        " (max supported: " + Integer.MAX_VALUE + ")"
+                    );
+                }
+                if (freq == 0L) continue;
+                writer.write(String.valueOf((char)i).repeat((int)freq));
             }
             System.out.printf("[INFO] Successfully wrote file `%s`%n", filename);
         } catch(IOException e) {

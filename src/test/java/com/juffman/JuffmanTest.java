@@ -16,20 +16,20 @@ public class JuffmanTest {
     @Test
     public void countFrequeciesEmpty() {
         String empty = "";
-        long[] frequencies = Juffman.countFrequencies(empty.getBytes());
-        assertEquals(getTotalCount(frequencies), empty.length());
-        for (long f : frequencies) {
-            assertEquals(f, 0L);
+        FrequencyTable table = FrequencyTable.fromBytes(empty.getBytes());
+        assertEquals(table.totalCount(), empty.length());
+        for (int i = 0; i < table.getSize(); ++i) {
+            assertEquals(table.get(i), 0L);
         }
     }
 
     @Test
     public void countFrequeciesString() {
         String str = "AAAaaB";
-        long[] frequencies = Juffman.countFrequencies(str.getBytes());
-        assertEquals(getTotalCount(frequencies), str.length());
-        for (int i = 0; i < frequencies.length; ++i) {
-            long f = frequencies[i];
+        FrequencyTable table = FrequencyTable.fromBytes(str.getBytes());
+        assertEquals(table.totalCount(), str.length());
+        for (int i = 0; i < table.getSize(); ++i) {
+            long f = table.get(i);
             if (i == 'A') assertEquals(f, 3L);
             else if (i == 'a') assertEquals(f, 2L);
             else if (i == 'B') assertEquals(f, 1L);
@@ -41,18 +41,18 @@ public class JuffmanTest {
     public void countFrequeciesUnicode() {
         String unicode = "€é漢";
         byte[] bytes = unicode.getBytes();
-        long[] frequencies = Juffman.countFrequencies(unicode.getBytes());
-        assertEquals(getTotalCount(frequencies), bytes.length);
+        FrequencyTable table = FrequencyTable.fromBytes(unicode.getBytes());
+        assertEquals(table.totalCount(), bytes.length);
         for (byte b : bytes) {
-            int unsigned = Byte.toUnsignedInt(b);
-            assertEquals(1L, frequencies[unsigned]);
+            int index = Byte.toUnsignedInt(b);
+            assertEquals(1L, table.get(index));
         }
     }
 
     // source: https://opendsa-server.cs.vt.edu/ODSA/Books/CS3/html/Huffman.html
     @Test
     public void generateHuffmanTree() {
-        HuffmanNode root = Juffman.generateHuffmanTree(sampleFrequencies());
+        HuffmanNode root = Juffman.generateHuffmanTree(sampleFrequencyTable());
 
         HuffmanNode cNode = new HuffmanNode(Byte.valueOf((byte)'C'), 32);
         HuffmanNode dNode = new HuffmanNode(Byte.valueOf((byte)'D'), 42);
@@ -92,7 +92,7 @@ public class JuffmanTest {
 
     @Test
     public void generateHuffmanCodes() {
-        HuffmanNode root = Juffman.generateHuffmanTree(sampleFrequencies());
+        HuffmanNode root = Juffman.generateHuffmanTree(sampleFrequencyTable());
 
         HuffmanCode[] letterCodes = Juffman.generateHuffmanCodesForLetters(root);
         assertEquals(letterCodes['C'], new HuffmanCode("1110"));
@@ -109,7 +109,8 @@ public class JuffmanTest {
     public void writeFrequencyTableHeader() throws Exception {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try (DataOutputStream out = new DataOutputStream(baos)) {
-            Juffman.writeFrequencyTable(sampleFrequencies(), out);
+            FrequencyTable table = sampleFrequencyTable();
+            table.writeFrequencyTable(out);
         }
 
         ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
@@ -156,27 +157,19 @@ public class JuffmanTest {
 
     @Test
     public void writeAndReadFrequencyHeader() throws Exception {
-        long[] frequencyTableExpected = sampleFrequencies();
+        FrequencyTable expectedTable = sampleFrequencyTable();
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try(DataOutputStream out = new DataOutputStream(baos)) {
-            Juffman.writeFrequencyTable(frequencyTableExpected, out);
+            expectedTable.writeFrequencyTable(out);
         }
         ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
         try(DataInputStream in = new DataInputStream(bais)) {
-            long[] frequencyTableActual = Juffman.readFrequencyTable(in);
-            assertArrayEquals(frequencyTableExpected, frequencyTableActual);
+            FrequencyTable actualTable = FrequencyTable.fromStream(in);
+            assertEquals(expectedTable, actualTable);
         }
     }
 
-    private long getTotalCount(long[] frequencies) {
-        long sum = 0;
-        for (long f : frequencies) {
-            sum += f;
-        }
-        return sum;
-    }
-
-    private long[] sampleFrequencies() {
+    private FrequencyTable sampleFrequencyTable() {
         long[] frequencies = new long[256];
         frequencies['C'] = 32;
         frequencies['D'] = 42;
@@ -186,6 +179,6 @@ public class JuffmanTest {
         frequencies['M'] = 24;
         frequencies['U'] = 37;
         frequencies['Z'] = 2;
-        return frequencies;
+        return new FrequencyTable(frequencies);
     }
 }
