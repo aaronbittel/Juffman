@@ -38,12 +38,16 @@ public class Juffman {
                 new FileOutputStream(filename)))
             {
                 frequencyTable.writeToStream(out);
+                Juffman.encode(data, codeTable);
                 System.out.printf("[INFO] Generated `%s`%n", filename);
             }
         } catch(IOException e) {
             System.err.printf("ERROR: reading '%s': %s%n", filepath, e.getMessage());
             System.exit(1);
         }
+    }
+
+    public static void encode(byte[] data, HuffmanCode[] codeTable) {
     }
 
     private static void generateCode(
