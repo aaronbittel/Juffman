@@ -34,7 +34,7 @@ public final class FrequencyTable {
         return new FrequencyTable(frequencies);
     }
 
-    public void writeFrequencyTable(DataOutputStream out) throws IOException {
+    public void writeToStream(DataOutputStream out) throws IOException {
         // magic
         out.writeByte((byte)'H');
         out.writeByte((byte)'U');
@@ -66,31 +66,11 @@ public final class FrequencyTable {
         }
     }
 
-    public void writeFrequencyTableToFile(String filename) {
-        try (DataOutputStream out = new DataOutputStream(
-            new FileOutputStream(filename))
-        ) {
-            writeFrequencyTable(out);
-        } catch(IOException e) {
-            System.err.printf(
-                "ERROR: could not write to file `%s`: %s%n", filename, e.getMessage());
-        }
-    }
-
-    public static FrequencyTable fromStream(
-        DataInputStream in
-    ) throws IOException {
+    public static FrequencyTable fromStream(DataInputStream in) throws IOException {
         if (in.readByte() != 'H' || in.readByte() != 'U' || in.readByte() != 'F')
             throw new IOException("Invalid magic header: expected 'HUF'");
 
-        FrequencyFormat format = switch((int)in.readByte()) {
-            case 1 -> FrequencyFormat.BYTE;
-            case 2 -> FrequencyFormat.SHORT;
-            case 4 -> FrequencyFormat.INT;
-            case 8 -> FrequencyFormat.LONG;
-            default -> throw new IllegalStateException("Unknown FrequencyFormat");
-        };
-
+        FrequencyFormat format = FrequencyFormat.fromCode(in.readByte());
         int size = in.readByte();
         long[] frequencies = new long[SIZE];
 
@@ -209,6 +189,18 @@ enum FrequencyFormat {
 
     public int getLength() {
         return length;
+    }
+
+    public static FrequencyFormat fromCode(int code) {
+        return switch(code) {
+            case 1 -> BYTE;
+            case 2 -> SHORT;
+            case 4 -> INT;
+            case 8 -> LONG;
+            default -> throw new IllegalArgumentException(
+                "Unknown FrequencyFormat code: " + code
+            );
+        };
     }
 
     abstract void writeFrequency(long freq, DataOutputStream out) throws IOException;

@@ -34,8 +34,12 @@ public class Juffman {
 
             HuffmanCode[] codeTable = generateHuffmanCodesForLetters(root);
             String filename = "encoded.txt";
-            frequencyTable.writeFrequencyTableToFile(filename);
-            System.out.printf("[INFO] Generated `%s`%n", filename);
+            try (DataOutputStream out = new DataOutputStream(
+                new FileOutputStream(filename)))
+            {
+                frequencyTable.writeToStream(out);
+                System.out.printf("[INFO] Generated `%s`%n", filename);
+            }
         } catch(IOException e) {
             System.err.printf("ERROR: reading '%s': %s%n", filepath, e.getMessage());
             System.exit(1);

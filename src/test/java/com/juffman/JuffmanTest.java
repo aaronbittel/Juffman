@@ -110,7 +110,7 @@ public class JuffmanTest {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try (DataOutputStream out = new DataOutputStream(baos)) {
             FrequencyTable table = sampleFrequencyTable();
-            table.writeFrequencyTable(out);
+            table.writeToStream(out);
         }
 
         ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
@@ -158,15 +158,16 @@ public class JuffmanTest {
     @Test
     public void writeAndReadFrequencyHeader() throws Exception {
         FrequencyTable expectedTable = sampleFrequencyTable();
+
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try(DataOutputStream out = new DataOutputStream(baos)) {
-            expectedTable.writeFrequencyTable(out);
-        }
+        DataOutputStream out = new DataOutputStream(baos);
+        expectedTable.writeToStream(out);
+
         ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
-        try(DataInputStream in = new DataInputStream(bais)) {
-            FrequencyTable actualTable = FrequencyTable.fromStream(in);
-            assertEquals(expectedTable, actualTable);
-        }
+        DataInputStream in = new DataInputStream(bais);
+        FrequencyTable actualTable = FrequencyTable.fromStream(in);
+
+        assertEquals(expectedTable, actualTable);
     }
 
     private FrequencyTable sampleFrequencyTable() {
