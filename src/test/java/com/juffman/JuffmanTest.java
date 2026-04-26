@@ -1,5 +1,8 @@
 package com.juffman;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -102,4 +105,46 @@ public class JuffmanTest {
         assertEquals(letterCodes['Z'], new HuffmanCode("111100"));
     }
 
+    @Test
+    public void encodeDataNoLeftOver() throws Exception {
+        String content = "HELLO WORLD";
+        FrequencyTable table = FrequencyTable.fromBytes(content.getBytes());
+
+        HuffmanNode root = Juffman.generateHuffmanTree(table);
+        HuffmanCode[] letterCodes = Juffman.generateHuffmanCodesForLetters(root);
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try(DataOutputStream out = new DataOutputStream(baos)) {
+            Juffman.encode(content.getBytes(), letterCodes, out);
+        }
+
+        byte[] expected = new byte[]{ (byte)0x22, (byte)0xB7, (byte)0x3C, (byte)0xAF };
+        byte[] actual = baos.toByteArray();
+        assertArrayEquals(expected, actual);
+    }
+
+    @Test
+    public void encodeDataWithLeftOver() throws Exception {
+        String content = "ABACBACBABCABCABCBACBACBA";
+        FrequencyTable table = FrequencyTable.fromBytes(content.getBytes());
+
+        HuffmanNode root = Juffman.generateHuffmanTree(table);
+        HuffmanCode[] letterCodes = Juffman.generateHuffmanCodesForLetters(root);
+
+        for (int i = 0; i < 256; ++i) {
+            if (letterCodes[i] == null) continue;
+            System.out.printf("%c => %s%n", (char)i, letterCodes[i]);
+        }
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try(DataOutputStream out = new DataOutputStream(baos)) {
+            Juffman.encode(content.getBytes(), letterCodes, out);
+        }
+
+        byte[] expected = new byte[]{
+            (byte)0xDC, (byte)0xE6, (byte)0xB5, (byte)0xA7, (byte)0x39, (byte)0x80
+        };
+        byte[] actual = baos.toByteArray();
+        assertArrayEquals(expected, actual);
+    }
 }

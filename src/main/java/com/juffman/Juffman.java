@@ -38,7 +38,7 @@ public class Juffman {
                 new FileOutputStream(filename)))
             {
                 frequencyTable.writeToStream(out);
-                Juffman.encode(data, codeTable);
+                Juffman.encode(data, codeTable, out);
                 System.out.printf("[INFO] Generated `%s`%n", filename);
             }
         } catch(IOException e) {
@@ -47,7 +47,17 @@ public class Juffman {
         }
     }
 
-    public static void encode(byte[] data, HuffmanCode[] codeTable) {
+    public static void encode(
+        byte[] data,
+        HuffmanCode[] codeTable,
+        DataOutputStream out
+    ) throws IOException {
+        BitWriter bitWriter = new BitWriter(out);
+        for (byte b : data) {
+            HuffmanCode code = codeTable[Byte.toUnsignedInt(b)];
+            bitWriter.write(code);
+        }
+        bitWriter.flush();
     }
 
     private static void generateCode(
@@ -95,24 +105,37 @@ public class Juffman {
 
         return nodes.getFirst();
     }
+}
 
-    public static void dumpFrequencies(FrequencyTable table, String filename) {
-        try (FileWriter writer = new FileWriter(filename)) {
-            for (int i = 0; i < table.getSize(); ++i) {
-                long freq = table.get(i);
-                if (freq > Integer.MAX_VALUE) {
-                    throw new IllegalStateException(
-                        "Frequency too large to materialize: " + freq +
-                        " (max supported: " + Integer.MAX_VALUE + ")"
-                    );
-                }
-                if (freq == 0L) continue;
-                writer.write(String.valueOf((char)i).repeat((int)freq));
+class BitWriter {
+    private final DataOutputStream out;
+    private byte b = 0;
+    private int index = 7;
+
+    public BitWriter(DataOutputStream out) {
+        this.out = out;
+    }
+
+    public void write(HuffmanCode code) throws IOException {
+        for (int i = 0; i < code.getSize(); ++i) {
+            if (code.get(i)) {
+                int mask = 1 << index;
+                b |= mask;
             }
-            System.out.printf("[INFO] Successfully wrote file `%s`%n", filename);
-        } catch(IOException e) {
-            System.err.printf(
-                "ERROR: could not write to file `%s`: %s%n", filename, e.getMessage());
+            index--;
+            if (index < 0) {
+                flushByte();
+            }
         }
+    }
+
+    private void flushByte() throws IOException {
+        out.writeByte((int)b);
+        index = 7;
+        b = 0;
+    }
+
+    public void flush() throws IOException {
+        if (index < 7) flushByte();
     }
 }

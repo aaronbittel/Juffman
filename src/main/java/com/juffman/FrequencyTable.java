@@ -132,6 +132,20 @@ public final class FrequencyTable {
 
         return sb.toString();
     }
+
+    public void dump(DataOutputStream out) throws IOException {
+        for (int i = 0; i < getSize(); ++i) {
+            long freq = get(i);
+            if (freq > Integer.MAX_VALUE) {
+                throw new IllegalStateException(
+                    "Frequency too large to materialize: " + freq +
+                    " (max supported: " + Integer.MAX_VALUE + ")"
+                );
+            }
+            if (freq == 0L) continue;
+            out.write(String.valueOf((char)i).repeat((int)freq).getBytes());
+        }
+    }
 }
 
 enum FrequencyFormat {

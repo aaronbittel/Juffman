@@ -32,6 +32,12 @@ class HuffmanCode implements Cloneable {
             "Only 0 or 1 can be appended to HuffmanCode.");
     }
 
+    public boolean get(int index) {
+        if (index < 0 || index >= size)
+            throw new IndexOutOfBoundsException("HuffmanCode access out of bounds");
+        return bitSet.get(index);
+    }
+
     public int getSize() {
         return size;
     }
