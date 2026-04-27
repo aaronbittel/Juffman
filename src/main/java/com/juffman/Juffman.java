@@ -18,11 +18,16 @@ import java.util.stream.Collectors;
 
 public class Juffman {
     public static void main(String[] args) {
-        CliConfig config = parseArgs(args);
         try {
+            CliConfig config = parseArgs(args);
             run(config);
+        } catch(IllegalArgumentException i) {
+            printUsage();
+            System.err.println("ERROR: " + i.getMessage());
+            System.exit(1);
         } catch(IOException e) {
             System.err.printf("Something went wrong: %s%n", e.getMessage());
+            System.exit(1);
         }
     }
 
@@ -36,8 +41,7 @@ public class Juffman {
 
     public static CliConfig parseArgs(String[] args) {
         if (args.length == 0) {
-            System.err.println("ERROR: No subcommand provided");
-            System.exit(1);
+            throw new IllegalArgumentException("No subcommand provided");
         }
 
         boolean version = false;
@@ -68,9 +72,8 @@ public class Juffman {
         if (subcommand.equals("decode")) mode = CliMode.DECODE;
         else if (subcommand.equals("encode")) mode = CliMode.ENCODE;
         else {
-            printUsage();
-            System.err.printf("ERROR: Unknown subcommand `%s`%n", subcommand);
-            System.exit(1);
+            throw new IllegalArgumentException(
+                String.format("Unknown subcommand `%s`", subcommand));
         }
 
         for (int i = 1; i < args.length; ++i) {
@@ -78,9 +81,8 @@ public class Juffman {
                 case "--input":
                 case "-i": {
                     if (i + 1 >= args.length) {
-                        printUsage();
-                        System.err.println("ERROR: Missing value for --input");
-                        System.exit(1);
+                        throw new IllegalArgumentException(
+                            "Missing value for --input");
                     }
                     inputFile = args[++i];
                     break;
@@ -88,32 +90,25 @@ public class Juffman {
                 case "--output":
                 case "-o": {
                     if (i + 1 >= args.length) {
-                        printUsage();
-                        System.err.println("ERROR: Missing value for --output");
-                        System.exit(1);
+                        throw new IllegalArgumentException(
+                            "Missing value for --output");
                     }
                     outputFile = args[++i];
                     break;
                 }
                 default: {
-                    printUsage();
-                    System.err.printf("ERROR: Unknown option `%s`%n", args[i]);
-                    System.exit(1);
-                    break;
+                    throw new IllegalArgumentException(
+                        String.format("Unknown option `%s`", args[i]));
                 }
             }
         }
 
         if (inputFile == null) {
-            printUsage();
-            System.err.println("ERROR: No inputfile provided");
-            System.exit(1);
+            throw new IllegalArgumentException("No inputfile provided");
         }
 
         if (outputFile == null) {
-            printUsage();
-            System.err.println("ERROR: No outputfile provided");
-            System.exit(1);
+            throw new IllegalArgumentException("No outputfile provided");
         }
 
         return new CliConfig(mode, inputFile, outputFile, false, false);
