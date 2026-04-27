@@ -18,50 +18,105 @@ import java.util.stream.Collectors;
 
 public class Juffman {
     public static void main(String[] args) {
-        if (args.length == 0) {
-            System.err.println("ERROR: No input file provided");
-            System.out.printf("Usage: java %s <input>%n", Juffman.class.getName());
-            System.exit(1);
-        }
-
-        Path filepath = Path.of(args[0]);
-        if (!Files.exists(filepath)) {
-            System.err.printf("ERROR: '%s' does not exist", filepath);
-            System.exit(1);
-        }
+        CliConfig config = parseArgs(args);
         try {
-            byte[] dataOriginal = Files.readAllBytes(filepath);
-            FrequencyTable tableOriginal = FrequencyTable.fromBytes(dataOriginal);
-            HuffmanNode rootOriginal = generateHuffmanTree(tableOriginal);
+            run(config);
+        } catch(IOException e) {
+            System.err.printf("Something went wrong: %s%n", e.getMessage());
+        }
+    }
 
-            HuffmanCode[] codeTableOriginl = generateHuffmanCodesForLetters(rootOriginal);
-            String filename = "encoded.txt";
-            try (DataOutputStream out = new DataOutputStream(
-                new FileOutputStream(filename)))
-            {
-                tableOriginal.writeToStream(out);
-                Juffman.encode(dataOriginal, codeTableOriginl, out);
-                System.out.printf("[INFO] Generated `%s`%n", filename);
+    private static CliConfig helpConfig() {
+        return new CliConfig(null, null, null, true, false);
+    }
+
+    private static CliConfig versionConfig() {
+        return new CliConfig(null, null, null, false, true);
+    }
+
+    public static CliConfig parseArgs(String[] args) {
+        if (args.length == 0) {
+            System.err.println("ERROR: No subcommand provided");
+            System.exit(1);
+        }
+
+        boolean version = false;
+        boolean help = false;
+
+        for (String arg : args) {
+            switch (arg) {
+                case "--help":
+                case "-h":
+                    help = true;
+                    break;
+                case "--version":
+                case "-v":
+                    version = true;
+                    break;
             }
+        }
 
-            try (DataInputStream in = new DataInputStream(
-                new FileInputStream(filename)))
-            {
-                FrequencyTable table = FrequencyTable.fromStream(in);
-                long totalCount = table.totalCount();
-                HuffmanNode root = generateHuffmanTree(table);
-                String outputFilepath = "decoded.txt";
-                try(DataOutputStream out = new DataOutputStream(
-                    new FileOutputStream(outputFilepath)))
-                {
-                    Juffman.decode(root, totalCount, in, out);
-                    System.out.printf("[INFO] Generated `%s`%n", outputFilepath);
+        if (help) return helpConfig();
+        if (version) return versionConfig();
+
+        String inputFile = null;
+        String outputFile = null;
+        CliMode mode = null;
+
+        String subcommand = args[0];
+
+        if (subcommand.equals("decode")) mode = CliMode.DECODE;
+        else if (subcommand.equals("encode")) mode = CliMode.ENCODE;
+        else {
+            printUsage();
+            System.err.printf("ERROR: Unknown subcommand `%s`%n", subcommand);
+            System.exit(1);
+        }
+
+        for (int i = 1; i < args.length; ++i) {
+            switch(args[i]) {
+                case "--input":
+                case "-i": {
+                    if (i + 1 >= args.length) {
+                        printUsage();
+                        System.err.println("ERROR: Missing value for --input");
+                        System.exit(1);
+                    }
+                    inputFile = args[++i];
+                    break;
+                }
+                case "--output":
+                case "-o": {
+                    if (i + 1 >= args.length) {
+                        printUsage();
+                        System.err.println("ERROR: Missing value for --output");
+                        System.exit(1);
+                    }
+                    outputFile = args[++i];
+                    break;
+                }
+                default: {
+                    printUsage();
+                    System.err.printf("ERROR: Unknown option `%s`%n", args[i]);
+                    System.exit(1);
+                    break;
                 }
             }
-        } catch(IOException e) {
-            System.err.printf("ERROR: reading '%s': %s%n", filepath, e.getMessage());
+        }
+
+        if (inputFile == null) {
+            printUsage();
+            System.err.println("ERROR: No inputfile provided");
             System.exit(1);
         }
+
+        if (outputFile == null) {
+            printUsage();
+            System.err.println("ERROR: No outputfile provided");
+            System.exit(1);
+        }
+
+        return new CliConfig(mode, inputFile, outputFile, false, false);
     }
 
     public static void decode(
@@ -138,6 +193,91 @@ public class Juffman {
 
         return nodes.getFirst();
     }
+
+    private static void printHelp() {
+        System.out.println("Juffman - Huffman Encoder / Decoder");
+        System.out.println();
+
+        System.out.println("Usage:");
+        System.out.println("  juffman encode -i <input> -o <output>");
+        System.out.println("  juffman decode -i <input> -o <output>");
+        System.out.println();
+
+        System.out.println("Options:");
+        System.out.println("  -i, --input <file>     Input file");
+        System.out.println("  -o, --output <file>    Output file");
+        System.out.println("  -h, --help             Show this help message");
+        System.out.println("  -v, --version          Show version information");
+        System.out.println();
+
+        System.out.println("Subcommands:");
+        System.out.println("  encode        Compress a file using Huffman coding");
+        System.out.println("  decode        Decompress a Huffman-encoded file");
+        System.out.println();
+    }
+
+    private static void printUsage() {
+        System.out.println("Usage:");
+        System.out.println("  juffman encode -i <input> -o <output>");
+        System.out.println("  juffman decode -i <input> -o <output>");
+        System.out.println();
+        System.out.println("Try 'juffman --help' for more information.");
+    }
+
+    private static void printVersion() {
+        System.out.println("v1.0-SNAPSHOT");
+    }
+
+    private static void printIllegalCommand() {
+        System.err.println("Illegal command");
+    }
+
+    private static void encode(String inputFile, String outputFile) throws IOException {
+        Path inputPath = Path.of(inputFile);
+        if (!Files.exists(inputPath)) {
+            System.err.printf("ERROR: '%s' does not exist", inputPath);
+            System.exit(1);
+        }
+        byte[] data = Files.readAllBytes(inputPath);
+        FrequencyTable table = FrequencyTable.fromBytes(data);
+        HuffmanNode root = generateHuffmanTree(table);
+
+        HuffmanCode[] codeTable = generateHuffmanCodesForLetters(root);
+        try (DataOutputStream out = new DataOutputStream(
+            new FileOutputStream(outputFile)))
+        {
+            table.writeToStream(out);
+            Juffman.encode(data, codeTable, out);
+            System.out.printf("[INFO] Encoded `%s` into `%s`%n", inputFile, outputFile);
+        }
+    }
+
+    private static void decode(String inputFile, String outputFile) throws IOException {
+        try (DataInputStream in = new DataInputStream(
+            new FileInputStream(inputFile)))
+        {
+            FrequencyTable table = FrequencyTable.fromStream(in);
+            long totalCount = table.totalCount();
+            HuffmanNode root = generateHuffmanTree(table);
+            try(DataOutputStream out = new DataOutputStream(
+                new FileOutputStream(outputFile)))
+            {
+                Juffman.decode(root, totalCount, in, out);
+                System.out.printf(
+                    "[INFO] Decoded `%s` into `%s`%n", inputFile, outputFile);
+            }
+        }
+    }
+
+    public static void run(CliConfig config) throws IOException {
+        if (config.help()) printHelp();
+        else if (config.version()) printVersion();
+        else if (config.mode() == CliMode.ENCODE)
+            encode(config.inputFile(), config.outputFile());
+        else if (config.mode() == CliMode.DECODE)
+            decode(config.inputFile(), config.outputFile());
+        else printIllegalCommand();
+    }
 }
 
 class BitReader {
@@ -196,3 +336,16 @@ class BitWriter {
         if (index < 7) flushByte();
     }
 }
+
+enum CliMode {
+    ENCODE,
+    DECODE;
+}
+
+record CliConfig(
+    CliMode mode,
+    String inputFile,
+    String outputFile,
+    boolean help,
+    boolean version
+) { }
