@@ -1,6 +1,8 @@
 package com.juffman;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
 import java.io.DataOutputStream;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -124,6 +126,26 @@ public class JuffmanTest {
     }
 
     @Test
+    public void decodeDataNoLeftOver() throws Exception {
+        String content = "HELLO WORLD";
+        FrequencyTable table = FrequencyTable.fromBytes(content.getBytes());
+        HuffmanNode root = Juffman.generateHuffmanTree(table);
+
+        byte[] encodedData = new byte[]{
+            (byte)0x22, (byte)0xB7, (byte)0x3C, (byte)0xAF
+        };
+
+        ByteArrayInputStream bais = new ByteArrayInputStream(encodedData);
+        DataInputStream in = new DataInputStream(bais);
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        DataOutputStream out = new DataOutputStream(baos);
+
+        Juffman.decode(root, table.totalCount(), in, out);
+        assertArrayEquals(content.getBytes(), baos.toByteArray());
+    }
+
+    @Test
     public void encodeDataWithLeftOver() throws Exception {
         String content = "ABACBACBABCABCABCBACBACBA";
         FrequencyTable table = FrequencyTable.fromBytes(content.getBytes());
@@ -137,14 +159,33 @@ public class JuffmanTest {
         }
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try(DataOutputStream out = new DataOutputStream(baos)) {
-            Juffman.encode(content.getBytes(), letterCodes, out);
-        }
+        DataOutputStream out = new DataOutputStream(baos);
+        Juffman.encode(content.getBytes(), letterCodes, out);
 
         byte[] expected = new byte[]{
             (byte)0xDC, (byte)0xE6, (byte)0xB5, (byte)0xA7, (byte)0x39, (byte)0x80
         };
         byte[] actual = baos.toByteArray();
         assertArrayEquals(expected, actual);
+    }
+
+    @Test
+    public void decodeDataWithLeftOver() throws Exception {
+        String content = "ABACBACBABCABCABCBACBACBA";
+        FrequencyTable table = FrequencyTable.fromBytes(content.getBytes());
+        HuffmanNode root = Juffman.generateHuffmanTree(table);
+
+        byte[] encodedData = new byte[]{
+            (byte)0xDC, (byte)0xE6, (byte)0xB5, (byte)0xA7, (byte)0x39, (byte)0x80
+        };
+
+        ByteArrayInputStream bais = new ByteArrayInputStream(encodedData);
+        DataInputStream in = new DataInputStream(bais);
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        DataOutputStream out = new DataOutputStream(baos);
+
+        Juffman.decode(root, table.totalCount(), in, out);
+        assertArrayEquals(content.getBytes(), baos.toByteArray());
     }
 }

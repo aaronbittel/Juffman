@@ -1,7 +1,9 @@
 package com.juffman;
 
+import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -28,22 +30,53 @@ public class Juffman {
             System.exit(1);
         }
         try {
-            byte[] data = Files.readAllBytes(filepath);
-            FrequencyTable frequencyTable = FrequencyTable.fromBytes(data);
-            HuffmanNode root = generateHuffmanTree(frequencyTable);
+            byte[] dataOriginal = Files.readAllBytes(filepath);
+            FrequencyTable tableOriginal = FrequencyTable.fromBytes(dataOriginal);
+            HuffmanNode rootOriginal = generateHuffmanTree(tableOriginal);
 
-            HuffmanCode[] codeTable = generateHuffmanCodesForLetters(root);
+            HuffmanCode[] codeTableOriginl = generateHuffmanCodesForLetters(rootOriginal);
             String filename = "encoded.txt";
             try (DataOutputStream out = new DataOutputStream(
                 new FileOutputStream(filename)))
             {
-                frequencyTable.writeToStream(out);
-                Juffman.encode(data, codeTable, out);
+                tableOriginal.writeToStream(out);
+                Juffman.encode(dataOriginal, codeTableOriginl, out);
                 System.out.printf("[INFO] Generated `%s`%n", filename);
+            }
+
+            try (DataInputStream in = new DataInputStream(
+                new FileInputStream(filename)))
+            {
+                FrequencyTable table = FrequencyTable.fromStream(in);
+                long totalCount = table.totalCount();
+                HuffmanNode root = generateHuffmanTree(table);
+                String outputFilepath = "decoded.txt";
+                try(DataOutputStream out = new DataOutputStream(
+                    new FileOutputStream(outputFilepath)))
+                {
+                    Juffman.decode(root, totalCount, in, out);
+                    System.out.printf("[INFO] Generated `%s`%n", outputFilepath);
+                }
             }
         } catch(IOException e) {
             System.err.printf("ERROR: reading '%s': %s%n", filepath, e.getMessage());
             System.exit(1);
+        }
+    }
+
+    public static void decode(
+        HuffmanNode root,
+        long count,
+        DataInputStream in,
+        DataOutputStream out
+    ) throws IOException {
+        BitReader bitReader = new BitReader(in);
+        for (long i = 0; i < count; ++i) {
+            HuffmanNode current = root;
+            while(!current.isLetterNode()) {
+                current = bitReader.read() ? current.getRight() : current.getLeft();
+            }
+            out.writeByte(current.getValue());
         }
     }
 
@@ -104,6 +137,30 @@ public class Juffman {
         }
 
         return nodes.getFirst();
+    }
+}
+
+class BitReader {
+    private final DataInputStream in;
+    private Byte b = null;
+    private int index = 7;
+
+    public BitReader(DataInputStream in) {
+        this.in = in;
+    }
+
+    public boolean read() throws IOException {
+        if (b == null) {
+            b = in.readByte();
+            index = 7;
+        }
+        int mask = 1 << index;
+        boolean bit = (b & mask) > 0;
+        index--;
+        if (index < 0) {
+            b = null;
+        }
+        return bit;
     }
 }
 
