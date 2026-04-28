@@ -2,43 +2,40 @@ package com.juffman;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
 public class JuffmanTest {
 
     @Test
-    public void countFrequeciesEmpty() {
+    public void countFrequenciesEmpty() {
         String empty = "";
         FrequencyTable table = FrequencyTable.fromBytes(empty.getBytes());
-        assertEquals(table.totalCount(), empty.length());
+        assertEquals(0, table.totalCount());
         for (int i = 0; i < table.getSize(); ++i) {
-            assertEquals(table.get(i), 0L);
+            assertEquals(0L, table.get(i));
         }
     }
 
     @Test
-    public void countFrequeciesString() {
+    public void countFrequenciesString() {
         String str = "AAAaaB";
         FrequencyTable table = FrequencyTable.fromBytes(str.getBytes());
         assertEquals(table.totalCount(), str.length());
         for (int i = 0; i < table.getSize(); ++i) {
             long f = table.get(i);
-            if (i == 'A') assertEquals(f, 3L);
-            else if (i == 'a') assertEquals(f, 2L);
-            else if (i == 'B') assertEquals(f, 1L);
-            else assertEquals(f, 0L);
+            if (i == 'A') assertEquals(3L, f);
+            else if (i == 'a') assertEquals(2L, f);
+            else if (i == 'B') assertEquals(1L, f);
+            else assertEquals(0L, f);
         }
     }
 
     @Test
-    public void countFrequeciesUnicode() {
+    public void countFrequenciesUnicode() {
         String unicode = "€é漢";
         byte[] bytes = unicode.getBytes();
         FrequencyTable table = FrequencyTable.fromBytes(unicode.getBytes());
@@ -55,14 +52,14 @@ public class JuffmanTest {
         HuffmanNode root = HuffmanTreeBuilder.build(
             FrequencyTableTest.sampleFrequencyTable());
 
-        HuffmanNode cNode = new HuffmanNode(Byte.valueOf((byte)'C'), 32);
-        HuffmanNode dNode = new HuffmanNode(Byte.valueOf((byte)'D'), 42);
-        HuffmanNode eNode = new HuffmanNode(Byte.valueOf((byte)'E'), 120);
-        HuffmanNode kNode = new HuffmanNode(Byte.valueOf((byte)'K'), 7);
-        HuffmanNode lNode = new HuffmanNode(Byte.valueOf((byte)'L'), 42);
-        HuffmanNode mNode = new HuffmanNode(Byte.valueOf((byte)'M'), 24);
-        HuffmanNode uNode = new HuffmanNode(Byte.valueOf((byte)'U'), 37);
-        HuffmanNode zNode = new HuffmanNode(Byte.valueOf((byte)'Z'), 2);
+        HuffmanNode cNode = new HuffmanNode((byte) 'C', 32);
+        HuffmanNode dNode = new HuffmanNode((byte) 'D', 42);
+        HuffmanNode eNode = new HuffmanNode((byte)'E', 120);
+        HuffmanNode kNode = new HuffmanNode((byte)'K', 7);
+        HuffmanNode lNode = new HuffmanNode((byte)'L', 42);
+        HuffmanNode mNode = new HuffmanNode((byte)'M', 24);
+        HuffmanNode uNode = new HuffmanNode((byte)'U', 37);
+        HuffmanNode zNode = new HuffmanNode((byte)'Z', 2);
 
         HuffmanNode expectedRoot = new HuffmanNode(
             null, 306, eNode, new HuffmanNode(

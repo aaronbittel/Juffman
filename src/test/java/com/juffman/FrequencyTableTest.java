@@ -3,12 +3,9 @@ package com.juffman;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
@@ -57,7 +54,7 @@ public class FrequencyTableTest {
             assertEquals('Z', in.readByte());
             assertEquals(2, in.readByte());
 
-            assertEquals(in.available(), 0);
+            assertEquals(0, in.available());
         }
     }
 

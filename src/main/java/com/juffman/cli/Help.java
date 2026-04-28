@@ -3,7 +3,7 @@ package com.juffman.cli;
 public record Help() implements Command {
 
     @Override
-    public void execute() throws Exception {
+    public void execute() {
         System.out.println("Juffman - Huffman Encoder / Decoder");
         System.out.println();
 

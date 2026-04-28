@@ -27,9 +27,6 @@ public class ArgParser {
         if (help) return new Help();
         if (version) return new Version();
 
-        String inputFile = null;
-        String outputFile = null;
-
         String subcommand = args[0];
 
         if (subcommand.equals("encode")) {

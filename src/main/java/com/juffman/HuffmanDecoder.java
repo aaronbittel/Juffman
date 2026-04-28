@@ -16,7 +16,6 @@ public class HuffmanDecoder {
         if (count == 0) return;
 
         HuffmanNode root = HuffmanTreeBuilder.build(table);
-        HuffmanCode[] codeTable = HuffmanCodeBuilder.build(root);
         decode(root, count, in, out);
     }
 

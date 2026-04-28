@@ -1,15 +1,5 @@
 package com.juffman;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.file.Path;
-import java.nio.file.Files;
-
 import com.juffman.cli.ArgParser;
 import com.juffman.cli.Command;
 
