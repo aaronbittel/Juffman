@@ -25,6 +25,47 @@ public class Juffman {
         }
     }
 
+    private static void decode(String inputFile, String outputFile) throws IOException {
+        Path inputPath = Path.of(inputFile);
+        if (!Files.exists(inputPath)) {
+            System.err.printf("ERROR: '%s' does not exist", inputFile);
+            System.exit(1);
+        }
+        try (InputStream in = Files.newInputStream(inputPath))
+        {
+            try(OutputStream out = Files.newOutputStream(Path.of(outputFile)))
+            {
+                HuffmanDecoder.decompress(in, out);
+                System.out.printf(
+                    "[INFO] Decoded `%s` into `%s`%n", inputFile, outputFile);
+            }
+        }
+    }
+
+    private static void encode(String inputFile, String outputFile) throws IOException {
+        Path inputPath = Path.of(inputFile);
+        if (!Files.exists(inputPath)) {
+            System.err.printf("ERROR: '%s' does not exist", inputPath);
+            System.exit(1);
+        }
+        try(InputStream in = Files.newInputStream(inputPath)) {
+            try(OutputStream out = Files.newOutputStream(Path.of(outputFile))) {
+                HuffmanEncoder.compress(in, out);
+                System.out.printf("[INFO] Encoded `%s` into `%s`%n", inputFile, outputFile);
+            }
+        }
+    }
+
+    public static void run(CliConfig config) throws IOException {
+        if (config.help()) printHelp();
+        else if (config.version()) printVersion();
+        else if (config.mode() == CliMode.ENCODE)
+            encode(config.inputFile(), config.outputFile());
+        else if (config.mode() == CliMode.DECODE)
+            decode(config.inputFile(), config.outputFile());
+        else printIllegalCommand();
+    }
+
     private static CliConfig helpConfig() {
         return new CliConfig(null, null, null, true, false);
     }
@@ -108,38 +149,6 @@ public class Juffman {
         return new CliConfig(mode, inputFile, outputFile, false, false);
     }
 
-    public static void decode(
-        HuffmanNode root,
-        long count,
-        InputStream inStream,
-        OutputStream outStream
-    ) throws IOException {
-        DataInputStream in = new DataInputStream(inStream);
-        DataOutputStream out = new DataOutputStream(outStream);
-        BitReader bitReader = new BitReader(in);
-        for (long i = 0; i < count; ++i) {
-            HuffmanNode current = root;
-            while(!current.isLetterNode()) {
-                current = bitReader.read() ? current.right() : current.left();
-            }
-            out.writeByte(current.value());
-        }
-    }
-
-    public static void encode(
-        byte[] data,
-        HuffmanCode[] codeTable,
-        OutputStream stream
-    ) throws IOException {
-        DataOutputStream out = new DataOutputStream(stream);
-        BitWriter bitWriter = new BitWriter(out);
-        for (byte b : data) {
-            HuffmanCode code = codeTable[Byte.toUnsignedInt(b)];
-            bitWriter.write(code);
-        }
-        bitWriter.flush();
-    }
-
     private static void printHelp() {
         System.out.println("Juffman - Huffman Encoder / Decoder");
         System.out.println();
@@ -176,108 +185,6 @@ public class Juffman {
 
     private static void printIllegalCommand() {
         System.err.println("Illegal command");
-    }
-
-    private static void encode(String inputFile, String outputFile) throws IOException {
-        Path inputPath = Path.of(inputFile);
-        if (!Files.exists(inputPath)) {
-            System.err.printf("ERROR: '%s' does not exist", inputPath);
-            System.exit(1);
-        }
-        byte[] data = Files.readAllBytes(inputPath);
-        FrequencyTable table = FrequencyTable.fromBytes(data);
-        HuffmanNode root = HuffmanTreeBuilder.build(table);
-
-        HuffmanCode[] codeTable = HuffmanCodeBuilder.build(root);
-        try (FileOutputStream out = new FileOutputStream(outputFile))
-        {
-            table.writeTo(out);
-            Juffman.encode(data, codeTable, out);
-            System.out.printf("[INFO] Encoded `%s` into `%s`%n", inputFile, outputFile);
-        }
-    }
-
-    private static void decode(String inputFile, String outputFile) throws IOException {
-        try (FileInputStream in = new FileInputStream(inputFile))
-        {
-            FrequencyTable table = FrequencyTable.readFrom(in);
-            long totalCount = table.totalCount();
-            HuffmanNode root = HuffmanTreeBuilder.build(table);
-            try(DataOutputStream out = new DataOutputStream(
-                new FileOutputStream(outputFile)))
-            {
-                Juffman.decode(root, totalCount, in, out);
-                System.out.printf(
-                    "[INFO] Decoded `%s` into `%s`%n", inputFile, outputFile);
-            }
-        }
-    }
-
-    public static void run(CliConfig config) throws IOException {
-        if (config.help()) printHelp();
-        else if (config.version()) printVersion();
-        else if (config.mode() == CliMode.ENCODE)
-            encode(config.inputFile(), config.outputFile());
-        else if (config.mode() == CliMode.DECODE)
-            decode(config.inputFile(), config.outputFile());
-        else printIllegalCommand();
-    }
-}
-
-class BitReader {
-    private final DataInputStream in;
-    private Byte b = null;
-    private int index = 7;
-
-    public BitReader(DataInputStream in) {
-        this.in = in;
-    }
-
-    public boolean read() throws IOException {
-        if (b == null) {
-            b = in.readByte();
-            index = 7;
-        }
-        int mask = 1 << index;
-        boolean bit = (b & mask) > 0;
-        index--;
-        if (index < 0) {
-            b = null;
-        }
-        return bit;
-    }
-}
-
-class BitWriter {
-    private final DataOutputStream out;
-    private byte b = 0;
-    private int index = 7;
-
-    public BitWriter(DataOutputStream out) {
-        this.out = out;
-    }
-
-    public void write(HuffmanCode code) throws IOException {
-        for (int i = 0; i < code.size(); ++i) {
-            if (code.get(i)) {
-                int mask = 1 << index;
-                b |= (byte) mask;
-            }
-            index--;
-            if (index < 0) {
-                flushByte();
-            }
-        }
-    }
-
-    private void flushByte() throws IOException {
-        out.writeByte((int)b);
-        index = 7;
-        b = 0;
-    }
-
-    public void flush() throws IOException {
-        if (index < 7) flushByte();
     }
 }
 

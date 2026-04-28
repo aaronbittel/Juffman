@@ -108,80 +108,37 @@ public class JuffmanTest {
     }
 
     @Test
-    public void encodeDataNoLeftOver() throws Exception {
+    public void compressAndDecompressNoLeftOver() throws Exception {
         String content = "HELLO WORLD";
-        FrequencyTable table = FrequencyTable.fromBytes(content.getBytes());
+        ByteArrayInputStream inputBais = new ByteArrayInputStream(content.getBytes());
+        ByteArrayOutputStream inputBaos = new ByteArrayOutputStream();
 
-        HuffmanNode root = HuffmanTreeBuilder.build(table);
-        HuffmanCode[] letterCodes = HuffmanCodeBuilder.build(root);
+        HuffmanEncoder.compress(inputBais, inputBaos);
 
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try(DataOutputStream out = new DataOutputStream(baos)) {
-            Juffman.encode(content.getBytes(), letterCodes, out);
-        }
+        ByteArrayInputStream outBais = new ByteArrayInputStream(
+            inputBaos.toByteArray());
+        ByteArrayOutputStream outBaos = new ByteArrayOutputStream();
 
-        byte[] expected = new byte[]{ (byte)0x22, (byte)0xB7, (byte)0x3C, (byte)0xAF };
-        byte[] actual = baos.toByteArray();
-        assertArrayEquals(expected, actual);
+        HuffmanDecoder.decompress(outBais, outBaos);
+
+        assertArrayEquals(content.getBytes(), outBaos.toByteArray());
     }
 
     @Test
-    public void decodeDataNoLeftOver() throws Exception {
-        String content = "HELLO WORLD";
-        FrequencyTable table = FrequencyTable.fromBytes(content.getBytes());
-        HuffmanNode root = HuffmanTreeBuilder.build(table);
-
-        byte[] encodedData = new byte[]{
-            (byte)0x22, (byte)0xB7, (byte)0x3C, (byte)0xAF
-        };
-
-        ByteArrayInputStream bais = new ByteArrayInputStream(encodedData);
-        DataInputStream in = new DataInputStream(bais);
-
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        DataOutputStream out = new DataOutputStream(baos);
-
-        Juffman.decode(root, table.totalCount(), in, out);
-        assertArrayEquals(content.getBytes(), baos.toByteArray());
-    }
-
-    @Test
-    public void encodeDataWithLeftOver() throws Exception {
+    public void compressAndDecompressWithLeftOver() throws Exception {
         String content = "ABACBACBABCABCABCBACBACBA";
-        FrequencyTable table = FrequencyTable.fromBytes(content.getBytes());
+        ByteArrayInputStream inputBais = new ByteArrayInputStream(content.getBytes());
+        ByteArrayOutputStream inputBaos = new ByteArrayOutputStream();
 
-        HuffmanNode root = HuffmanTreeBuilder.build(table);
-        HuffmanCode[] letterCodes = HuffmanCodeBuilder.build(root);
+        HuffmanEncoder.compress(inputBais, inputBaos);
 
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        DataOutputStream out = new DataOutputStream(baos);
-        Juffman.encode(content.getBytes(), letterCodes, out);
+        ByteArrayInputStream outBais = new ByteArrayInputStream(
+            inputBaos.toByteArray());
+        ByteArrayOutputStream outBaos = new ByteArrayOutputStream();
 
-        byte[] expected = new byte[]{
-            (byte)0xDC, (byte)0xE6, (byte)0xB5, (byte)0xA7, (byte)0x39, (byte)0x80
-        };
-        byte[] actual = baos.toByteArray();
-        assertArrayEquals(expected, actual);
-    }
+        HuffmanDecoder.decompress(outBais, outBaos);
 
-    @Test
-    public void decodeDataWithLeftOver() throws Exception {
-        String content = "ABACBACBABCABCABCBACBACBA";
-        FrequencyTable table = FrequencyTable.fromBytes(content.getBytes());
-        HuffmanNode root = HuffmanTreeBuilder.build(table);
-
-        byte[] encodedData = new byte[]{
-            (byte)0xDC, (byte)0xE6, (byte)0xB5, (byte)0xA7, (byte)0x39, (byte)0x80
-        };
-
-        ByteArrayInputStream bais = new ByteArrayInputStream(encodedData);
-        DataInputStream in = new DataInputStream(bais);
-
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        DataOutputStream out = new DataOutputStream(baos);
-
-        Juffman.decode(root, table.totalCount(), in, out);
-        assertArrayEquals(content.getBytes(), baos.toByteArray());
+        assertArrayEquals(content.getBytes(), outBaos.toByteArray());
     }
 
     private static HuffmanCode HuffmanCodeFromString(String input) {
