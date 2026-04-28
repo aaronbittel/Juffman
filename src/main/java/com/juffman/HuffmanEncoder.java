@@ -10,11 +10,18 @@ public class HuffmanEncoder {
     private HuffmanEncoder() { }
 
     public static void compress(InputStream in, OutputStream out) throws IOException {
+        // TODO: dont read all bytes into memory, use chunked reading and 2 streams
         byte[] data = in.readAllBytes();
+
         FrequencyTable table = FrequencyTable.fromBytes(data);
+
+        if (data.length == 0) {
+            table.writeTo(out);
+            return;
+        }
+
         HuffmanNode root = HuffmanTreeBuilder.build(table);
         HuffmanCode[] codeTable = HuffmanCodeBuilder.build(root);
-
         table.writeTo(out);
         encode(data, codeTable, out);
     }

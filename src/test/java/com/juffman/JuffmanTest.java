@@ -108,6 +108,23 @@ public class JuffmanTest {
     }
 
     @Test
+    public void compressAndDecompressEmptyData() throws Exception {
+        String content = "";
+        ByteArrayInputStream inputBais = new ByteArrayInputStream(content.getBytes());
+        ByteArrayOutputStream inputBaos = new ByteArrayOutputStream();
+
+        HuffmanEncoder.compress(inputBais, inputBaos);
+
+        ByteArrayInputStream outBais = new ByteArrayInputStream(
+            inputBaos.toByteArray());
+        ByteArrayOutputStream outBaos = new ByteArrayOutputStream();
+
+        HuffmanDecoder.decompress(outBais, outBaos);
+
+        assertArrayEquals(content.getBytes(), outBaos.toByteArray());
+    }
+
+    @Test
     public void compressAndDecompressNoLeftOver() throws Exception {
         String content = "HELLO WORLD";
         ByteArrayInputStream inputBais = new ByteArrayInputStream(content.getBytes());

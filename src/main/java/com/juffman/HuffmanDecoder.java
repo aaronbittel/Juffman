@@ -12,9 +12,12 @@ public class HuffmanDecoder {
 
     public static void decompress(InputStream in, OutputStream out) throws IOException {
         FrequencyTable table = FrequencyTable.readFrom(in);
+        long count = table.totalCount();
+        if (count == 0) return;
+
         HuffmanNode root = HuffmanTreeBuilder.build(table);
         HuffmanCode[] codeTable = HuffmanCodeBuilder.build(root);
-        decode(root, table.totalCount(), in, out);
+        decode(root, count, in, out);
     }
 
     public static void decode(

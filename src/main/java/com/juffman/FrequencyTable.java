@@ -151,6 +151,7 @@ public class FrequencyTable {
 
         FrequencyFormat format = FrequencyFormat.fromCode(in.readUnsignedByte());
         // need short: 0..=256 possible values for size
+        // TODO: assert size 0 <= size <= 256
         int size = in.readUnsignedShort();
         long[] frequencies = new long[SIZE];
 
@@ -180,9 +181,14 @@ public class FrequencyTable {
         return count;
     }
 
+    public boolean isEmpty() {
+        return totalCount() == 0;
+    }
+
     public int getSize() {
         return SIZE;
     }
+
 
     @Override
     public boolean equals(Object o) {
