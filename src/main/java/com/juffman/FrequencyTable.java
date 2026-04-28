@@ -2,12 +2,85 @@ package com.juffman;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.Arrays;
-import java.util.Objects;
 
-public final class FrequencyTable {
+public class FrequencyTable {
+    enum FrequencyFormat {
+
+        BYTE(1) {
+            @Override
+            void writeTo(long freq, DataOutputStream out) throws IOException {
+                out.writeByte((byte)freq);
+            }
+
+            @Override
+            long readFrom(DataInputStream in) throws IOException {
+                return in.readUnsignedByte();
+            }
+        },
+        SHORT(2) {
+            @Override
+            void writeTo(long freq, DataOutputStream out) throws IOException {
+                out.writeShort((short)freq);
+            }
+
+            @Override
+            long readFrom(DataInputStream in) throws IOException {
+                return in.readUnsignedShort();
+            }
+        },
+        INT(4) {
+            @Override
+            void writeTo(long freq, DataOutputStream out) throws IOException {
+                out.writeInt((int)freq);
+            }
+
+            @Override
+            long readFrom(DataInputStream in) throws IOException {
+                return Integer.toUnsignedLong(in.readInt());
+            }
+        },
+        LONG(8) {
+            @Override
+            void writeTo(long freq, DataOutputStream out) throws IOException {
+                out.writeLong(freq);
+            }
+
+            @Override
+            long readFrom(DataInputStream in) throws IOException {
+                return in.readLong();
+            }
+        };
+
+        private final int length;
+
+        FrequencyFormat(int length) {
+            this.length = length;
+        }
+
+        public int getLength() {
+            return length;
+        }
+
+        public static FrequencyFormat fromCode(int code) {
+            return switch(code) {
+                case 1 -> BYTE;
+                case 2 -> SHORT;
+                case 4 -> INT;
+                case 8 -> LONG;
+                default -> throw new IllegalArgumentException(
+                    "Unknown FrequencyFormat code: " + code
+                );
+            };
+        }
+
+        abstract void writeTo(long freq, DataOutputStream out) throws IOException;
+        abstract long readFrom(DataInputStream in) throws IOException;
+    }
+
     private static final int SIZE = 256;
 
     private final long[] frequencies;
@@ -34,7 +107,8 @@ public final class FrequencyTable {
         return new FrequencyTable(frequencies);
     }
 
-    public void writeToStream(DataOutputStream out) throws IOException {
+    public void writeTo(OutputStream stream) throws IOException {
+        DataOutputStream out = new DataOutputStream(stream);
         // magic
         out.writeByte((byte)'H');
         out.writeByte((byte)'U');
@@ -55,28 +129,34 @@ public final class FrequencyTable {
         else if (max <= Integer.MAX_VALUE) format = FrequencyFormat.INT;
         else format = FrequencyFormat.LONG;
 
-        out.writeByte(format.getLength()); // length of frequency fields
-        out.writeByte(size);               // count of unique bytes
+        out.writeByte(format.getLength());  // length of frequency fields
+        out.writeShort(size);               // count of unique bytes
 
         for (int i = 0; i < SIZE; ++i) {
             long freq = frequencies[i];
             if (freq == 0) continue;
             out.writeByte((byte)i);
-            format.writeFrequency(freq, out);
+            format.writeTo(freq, out);
         }
     }
 
-    public static FrequencyTable fromStream(DataInputStream in) throws IOException {
-        if (in.readByte() != 'H' || in.readByte() != 'U' || in.readByte() != 'F')
+    public static FrequencyTable readFrom(InputStream stream) throws IOException {
+        DataInputStream in = new DataInputStream(stream);
+        if (in.readUnsignedByte() != 'H'
+            || in.readUnsignedByte() != 'U'
+            || in.readUnsignedByte() != 'F')
+        {
             throw new IOException("Invalid magic header: expected 'HUF'");
+        }
 
-        FrequencyFormat format = FrequencyFormat.fromCode(in.readByte());
-        int size = in.readByte();
+        FrequencyFormat format = FrequencyFormat.fromCode(in.readUnsignedByte());
+        // need short: 0..=256 possible values for size
+        int size = in.readUnsignedShort();
         long[] frequencies = new long[SIZE];
 
         for (int i = 0; i < size; ++i) {
-            int index = Byte.toUnsignedInt(in.readByte());
-            frequencies[index] = format.readFrequency(in);
+            int index = in.readUnsignedByte();
+            frequencies[index] = format.readFrom(in);
         }
 
         return new FrequencyTable(frequencies);
@@ -107,14 +187,13 @@ public final class FrequencyTable {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof FrequencyTable)) return false;
-        FrequencyTable other = (FrequencyTable)o;
+        if (!(o instanceof FrequencyTable other)) return false;
         return Arrays.equals(frequencies, other.frequencies);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(frequencies);
+        return Arrays.hashCode(frequencies);
     }
 
     @Override
@@ -133,7 +212,8 @@ public final class FrequencyTable {
         return sb.toString();
     }
 
-    public void dump(DataOutputStream out) throws IOException {
+    public void dump(OutputStream stream) throws IOException {
+        DataOutputStream out = new DataOutputStream(stream);
         for (int i = 0; i < getSize(); ++i) {
             long freq = get(i);
             if (freq > Integer.MAX_VALUE) {
@@ -146,77 +226,4 @@ public final class FrequencyTable {
             out.write(String.valueOf((char)i).repeat((int)freq).getBytes());
         }
     }
-}
-
-enum FrequencyFormat {
-
-    BYTE(1) {
-        @Override
-        void writeFrequency(long freq, DataOutputStream out) throws IOException {
-            out.writeByte((byte)freq);
-        }
-
-        @Override
-        long readFrequency(DataInputStream in) throws IOException {
-            return (long)in.readByte();
-        }
-    },
-    SHORT(2) {
-        @Override
-        void writeFrequency(long freq, DataOutputStream out) throws IOException {
-            out.writeShort((short)freq);
-        }
-
-        @Override
-        long readFrequency(DataInputStream in) throws IOException {
-            return (long)in.readShort();
-        }
-    },
-    INT(4) {
-        @Override
-        void writeFrequency(long freq, DataOutputStream out) throws IOException {
-            out.writeInt((int)freq);
-        }
-
-        @Override
-        long readFrequency(DataInputStream in) throws IOException {
-            return (long)in.readInt();
-        }
-    },
-    LONG(8) {
-        @Override
-        void writeFrequency(long freq, DataOutputStream out) throws IOException {
-            out.writeLong(freq);
-        }
-
-        @Override
-        long readFrequency(DataInputStream in) throws IOException {
-            return in.readLong();
-        }
-    };
-
-    private final int length;
-
-    FrequencyFormat(int length) {
-        this.length = length;
-    }
-
-    public int getLength() {
-        return length;
-    }
-
-    public static FrequencyFormat fromCode(int code) {
-        return switch(code) {
-            case 1 -> BYTE;
-            case 2 -> SHORT;
-            case 4 -> INT;
-            case 8 -> LONG;
-            default -> throw new IllegalArgumentException(
-                "Unknown FrequencyFormat code: " + code
-            );
-        };
-    }
-
-    abstract void writeFrequency(long freq, DataOutputStream out) throws IOException;
-    abstract long readFrequency(DataInputStream in) throws IOException;
 }

@@ -52,7 +52,7 @@ public class JuffmanTest {
     // source: https://opendsa-server.cs.vt.edu/ODSA/Books/CS3/html/Huffman.html
     @Test
     public void generateHuffmanTree() {
-        HuffmanNode root = Juffman.generateHuffmanTree(
+        HuffmanNode root = HuffmanTreeBuilder.build(
             FrequencyTableTest.sampleFrequencyTable());
 
         HuffmanNode cNode = new HuffmanNode(Byte.valueOf((byte)'C'), 32);
@@ -93,18 +93,18 @@ public class JuffmanTest {
 
     @Test
     public void generateHuffmanCodes() {
-        HuffmanNode root = Juffman.generateHuffmanTree(
+        HuffmanNode root = HuffmanTreeBuilder.build(
             FrequencyTableTest.sampleFrequencyTable());
 
-        HuffmanCode[] letterCodes = Juffman.generateHuffmanCodesForLetters(root);
-        assertEquals(letterCodes['C'], new HuffmanCode("1110"));
-        assertEquals(letterCodes['D'], new HuffmanCode("101"));
-        assertEquals(letterCodes['E'], new HuffmanCode("0"));
-        assertEquals(letterCodes['K'], new HuffmanCode("111101"));
-        assertEquals(letterCodes['L'], new HuffmanCode("110"));
-        assertEquals(letterCodes['M'], new HuffmanCode("11111"));
-        assertEquals(letterCodes['U'], new HuffmanCode("100"));
-        assertEquals(letterCodes['Z'], new HuffmanCode("111100"));
+        HuffmanCode[] letterCodes = HuffmanCodeBuilder.build(root);
+        assertEquals(letterCodes['C'], HuffmanCodeFromString("1110"));
+        assertEquals(letterCodes['D'], HuffmanCodeFromString("101"));
+        assertEquals(letterCodes['E'], HuffmanCodeFromString("0"));
+        assertEquals(letterCodes['K'], HuffmanCodeFromString("111101"));
+        assertEquals(letterCodes['L'], HuffmanCodeFromString("110"));
+        assertEquals(letterCodes['M'], HuffmanCodeFromString("11111"));
+        assertEquals(letterCodes['U'], HuffmanCodeFromString("100"));
+        assertEquals(letterCodes['Z'], HuffmanCodeFromString("111100"));
     }
 
     @Test
@@ -112,8 +112,8 @@ public class JuffmanTest {
         String content = "HELLO WORLD";
         FrequencyTable table = FrequencyTable.fromBytes(content.getBytes());
 
-        HuffmanNode root = Juffman.generateHuffmanTree(table);
-        HuffmanCode[] letterCodes = Juffman.generateHuffmanCodesForLetters(root);
+        HuffmanNode root = HuffmanTreeBuilder.build(table);
+        HuffmanCode[] letterCodes = HuffmanCodeBuilder.build(root);
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try(DataOutputStream out = new DataOutputStream(baos)) {
@@ -129,7 +129,7 @@ public class JuffmanTest {
     public void decodeDataNoLeftOver() throws Exception {
         String content = "HELLO WORLD";
         FrequencyTable table = FrequencyTable.fromBytes(content.getBytes());
-        HuffmanNode root = Juffman.generateHuffmanTree(table);
+        HuffmanNode root = HuffmanTreeBuilder.build(table);
 
         byte[] encodedData = new byte[]{
             (byte)0x22, (byte)0xB7, (byte)0x3C, (byte)0xAF
@@ -150,13 +150,8 @@ public class JuffmanTest {
         String content = "ABACBACBABCABCABCBACBACBA";
         FrequencyTable table = FrequencyTable.fromBytes(content.getBytes());
 
-        HuffmanNode root = Juffman.generateHuffmanTree(table);
-        HuffmanCode[] letterCodes = Juffman.generateHuffmanCodesForLetters(root);
-
-        for (int i = 0; i < 256; ++i) {
-            if (letterCodes[i] == null) continue;
-            System.out.printf("%c => %s%n", (char)i, letterCodes[i]);
-        }
+        HuffmanNode root = HuffmanTreeBuilder.build(table);
+        HuffmanCode[] letterCodes = HuffmanCodeBuilder.build(root);
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         DataOutputStream out = new DataOutputStream(baos);
@@ -173,7 +168,7 @@ public class JuffmanTest {
     public void decodeDataWithLeftOver() throws Exception {
         String content = "ABACBACBABCABCABCBACBACBA";
         FrequencyTable table = FrequencyTable.fromBytes(content.getBytes());
-        HuffmanNode root = Juffman.generateHuffmanTree(table);
+        HuffmanNode root = HuffmanTreeBuilder.build(table);
 
         byte[] encodedData = new byte[]{
             (byte)0xDC, (byte)0xE6, (byte)0xB5, (byte)0xA7, (byte)0x39, (byte)0x80
@@ -187,5 +182,18 @@ public class JuffmanTest {
 
         Juffman.decode(root, table.totalCount(), in, out);
         assertArrayEquals(content.getBytes(), baos.toByteArray());
+    }
+
+    private static HuffmanCode HuffmanCodeFromString(String input) {
+        int size = input.length();
+        int bits = 0;
+        for (int i = 0; i < input.length(); ++i) {
+            if (input.charAt(i) == '1') {
+                bits |= (1 << (size - i - 1));
+            } else if (input.charAt(i) != '0') {
+                throw new IllegalArgumentException("Only '0' or '1' allowed");
+            }
+        }
+        return new HuffmanCode(bits, size);
     }
 }

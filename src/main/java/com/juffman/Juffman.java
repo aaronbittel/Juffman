@@ -1,23 +1,17 @@
 package com.juffman;
 
-import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
+import java.io.InputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Path;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 public class Juffman {
-    public static void main(String[] args) {
+    static void main(String[] args) {
         try {
             CliConfig config = parseArgs(args);
             run(config);
@@ -65,7 +59,7 @@ public class Juffman {
 
         String inputFile = null;
         String outputFile = null;
-        CliMode mode = null;
+        CliMode mode;
 
         String subcommand = args[0];
 
@@ -104,11 +98,11 @@ public class Juffman {
         }
 
         if (inputFile == null) {
-            throw new IllegalArgumentException("No inputfile provided");
+            throw new IllegalArgumentException("No input file provided");
         }
 
         if (outputFile == null) {
-            throw new IllegalArgumentException("No outputfile provided");
+            throw new IllegalArgumentException("No outfile provided");
         }
 
         return new CliConfig(mode, inputFile, outputFile, false, false);
@@ -117,76 +111,33 @@ public class Juffman {
     public static void decode(
         HuffmanNode root,
         long count,
-        DataInputStream in,
-        DataOutputStream out
+        InputStream inStream,
+        OutputStream outStream
     ) throws IOException {
+        DataInputStream in = new DataInputStream(inStream);
+        DataOutputStream out = new DataOutputStream(outStream);
         BitReader bitReader = new BitReader(in);
         for (long i = 0; i < count; ++i) {
             HuffmanNode current = root;
             while(!current.isLetterNode()) {
-                current = bitReader.read() ? current.getRight() : current.getLeft();
+                current = bitReader.read() ? current.right() : current.left();
             }
-            out.writeByte(current.getValue());
+            out.writeByte(current.value());
         }
     }
 
     public static void encode(
         byte[] data,
         HuffmanCode[] codeTable,
-        DataOutputStream out
+        OutputStream stream
     ) throws IOException {
+        DataOutputStream out = new DataOutputStream(stream);
         BitWriter bitWriter = new BitWriter(out);
         for (byte b : data) {
             HuffmanCode code = codeTable[Byte.toUnsignedInt(b)];
             bitWriter.write(code);
         }
         bitWriter.flush();
-    }
-
-    private static void generateCode(
-        HuffmanCode[] codes,
-        HuffmanNode node,
-        HuffmanCode code
-    ) {
-        if (node.isLetterNode()) {
-            codes[node.getIndex()] = new HuffmanCode(code);
-        }
-        if (node.hasLeft()) {
-            HuffmanCode leftCode = new HuffmanCode(code);
-            leftCode.append(0);
-            generateCode(codes, node.getLeft(), leftCode);
-        }
-        if (node.hasRight()) {
-            HuffmanCode rightCode = new HuffmanCode(code);
-            rightCode.append(1);
-            generateCode(codes, node.getRight(), rightCode);
-        }
-    }
-
-    public static HuffmanCode[] generateHuffmanCodesForLetters(HuffmanNode root) {
-        HuffmanCode[] codes = new HuffmanCode[256];
-        generateCode(codes, root, new HuffmanCode());
-        return codes;
-    }
-
-    public static HuffmanNode generateHuffmanTree(FrequencyTable table) {
-        List<HuffmanNode> nodes = new ArrayList<>(table.getSize());
-        for (int i = 0; i < table.getSize(); ++i) {
-            long freq = table.get(i);
-            if (freq == 0L) continue;
-            nodes.add(new HuffmanNode(Byte.valueOf((byte)i), freq));
-        }
-        nodes.sort((a, b) -> (int)(a.getCount() - b.getCount()));
-
-        while(nodes.size() > 1) {
-            HuffmanNode first = nodes.removeFirst();
-            HuffmanNode second = nodes.removeFirst();
-            nodes.add(new HuffmanNode(
-                null, first.getCount() + second.getCount(), first, second));
-            nodes.sort((a, b) -> (int)(a.getCount() - b.getCount()));
-        }
-
-        return nodes.getFirst();
     }
 
     private static void printHelp() {
@@ -235,25 +186,23 @@ public class Juffman {
         }
         byte[] data = Files.readAllBytes(inputPath);
         FrequencyTable table = FrequencyTable.fromBytes(data);
-        HuffmanNode root = generateHuffmanTree(table);
+        HuffmanNode root = HuffmanTreeBuilder.build(table);
 
-        HuffmanCode[] codeTable = generateHuffmanCodesForLetters(root);
-        try (DataOutputStream out = new DataOutputStream(
-            new FileOutputStream(outputFile)))
+        HuffmanCode[] codeTable = HuffmanCodeBuilder.build(root);
+        try (FileOutputStream out = new FileOutputStream(outputFile))
         {
-            table.writeToStream(out);
+            table.writeTo(out);
             Juffman.encode(data, codeTable, out);
             System.out.printf("[INFO] Encoded `%s` into `%s`%n", inputFile, outputFile);
         }
     }
 
     private static void decode(String inputFile, String outputFile) throws IOException {
-        try (DataInputStream in = new DataInputStream(
-            new FileInputStream(inputFile)))
+        try (FileInputStream in = new FileInputStream(inputFile))
         {
-            FrequencyTable table = FrequencyTable.fromStream(in);
+            FrequencyTable table = FrequencyTable.readFrom(in);
             long totalCount = table.totalCount();
-            HuffmanNode root = generateHuffmanTree(table);
+            HuffmanNode root = HuffmanTreeBuilder.build(table);
             try(DataOutputStream out = new DataOutputStream(
                 new FileOutputStream(outputFile)))
             {
@@ -309,10 +258,10 @@ class BitWriter {
     }
 
     public void write(HuffmanCode code) throws IOException {
-        for (int i = 0; i < code.getSize(); ++i) {
+        for (int i = 0; i < code.size(); ++i) {
             if (code.get(i)) {
                 int mask = 1 << index;
-                b |= mask;
+                b |= (byte) mask;
             }
             index--;
             if (index < 0) {
@@ -334,7 +283,7 @@ class BitWriter {
 
 enum CliMode {
     ENCODE,
-    DECODE;
+    DECODE
 }
 
 record CliConfig(

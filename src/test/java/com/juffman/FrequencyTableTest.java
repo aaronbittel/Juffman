@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -15,10 +16,8 @@ public class FrequencyTableTest {
     @Test
     public void writeFrequencyTableHeader() throws Exception {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try (DataOutputStream out = new DataOutputStream(baos)) {
-            FrequencyTable table = sampleFrequencyTable();
-            table.writeToStream(out);
-        }
+        FrequencyTable table = sampleFrequencyTable();
+        table.writeTo(baos);
 
         ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
         try (DataInputStream in = new DataInputStream(bais)) {
@@ -30,7 +29,7 @@ public class FrequencyTableTest {
             // check FrequencyFormat BYTE
             assertEquals(1, in.readByte());
             // check unique byte count
-            assertEquals(8, in.readByte());
+            assertEquals(8, in.readShort());
 
             // check frequencies
             // frequencies['C'] = 32;
@@ -67,14 +66,42 @@ public class FrequencyTableTest {
         FrequencyTable expectedTable = sampleFrequencyTable();
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        DataOutputStream out = new DataOutputStream(baos);
-        expectedTable.writeToStream(out);
+        expectedTable.writeTo(baos);
 
         ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
-        DataInputStream in = new DataInputStream(bais);
-        FrequencyTable actualTable = FrequencyTable.fromStream(in);
+        FrequencyTable actualTable = FrequencyTable.readFrom(bais);
 
         assertEquals(expectedTable, actualTable);
+    }
+
+    @Test
+    public void allBytesOnce() throws IOException {
+        byte[] allBytes = new byte[256];
+        for (int i = 0; i < 256; ++i) {
+            allBytes[i] = (byte)i;
+        }
+        FrequencyTable table = FrequencyTable.fromBytes(allBytes);
+        for (int i = 0; i < 256; ++i) {
+            assertEquals(1, table.get(i));
+        }
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        table.writeTo(out);
+
+        ByteArrayInputStream baos = new ByteArrayInputStream(out.toByteArray());
+        DataInputStream in = new DataInputStream(baos);
+
+        assertEquals('H', in.readUnsignedByte());
+        assertEquals('U', in.readUnsignedByte());
+        assertEquals('F', in.readUnsignedByte());
+
+        assertEquals(1, in.readUnsignedByte()); // frequency format (BYTE)
+        assertEquals(256, in.readShort());      // count unique
+
+        for (int i = 0; i < 256; ++i) {
+            assertEquals(i, in.readUnsignedByte());
+            assertEquals(1, in.readUnsignedByte());
+        }
     }
 
     public static FrequencyTable sampleFrequencyTable() {

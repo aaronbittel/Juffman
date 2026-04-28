@@ -1,20 +1,6 @@
 package com.juffman;
 
-import java.util.Objects;
-
-class HuffmanNode {
-    private Byte value;
-    private long count;
-
-    private HuffmanNode left;
-    private HuffmanNode right;
-
-    public HuffmanNode(Byte value, long count, HuffmanNode left, HuffmanNode right) {
-        this.value = value;
-        this.count = count;
-        this.left = left;
-        this.right = right;
-    }
+public record HuffmanNode(Byte value, long count, HuffmanNode left, HuffmanNode right) {
 
     public HuffmanNode(Byte value, long count) {
         this(value, count, null, null);
@@ -32,42 +18,10 @@ class HuffmanNode {
         return value != null;
     }
 
-    public Byte getValue() {
-        return value;
-    }
-
     public int getIndex() {
         if (value == null) throw new IllegalStateException(
-            "Cannot compute index: value is null.");
+                "Cannot compute index: value is null.");
         return Byte.toUnsignedInt(value);
-    }
-
-    public long getCount() {
-        return count;
-    }
-
-    public HuffmanNode getLeft() {
-        return left;
-    }
-
-    public HuffmanNode getRight() {
-        return right;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof HuffmanNode)) return false;
-        HuffmanNode other = (HuffmanNode)o;
-        return count == other.count
-            && Objects.equals(value, other.getValue())
-            && Objects.equals(left, other.getLeft())
-            && Objects.equals(right, other.getRight());
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(value, count, left, right);
     }
 
     @Override
@@ -77,9 +31,9 @@ class HuffmanNode {
 
     public String toStringIndent(int indent) {
         StringBuilder sb = new StringBuilder();
-        sb.append(" ".repeat(indent))
-          .append(nodeToString())
-          .append("\n");
+        sb.repeat(" ", indent)
+            .append(nodeToString())
+            .append("\n");
 
         if (left != null) sb.append(left.toStringIndent(indent + 2));
         if (right != null) sb.append(right.toStringIndent(indent + 2));
@@ -98,4 +52,3 @@ class HuffmanNode {
         return v + " (" + count + ")";
     }
 }
-
