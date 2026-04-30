@@ -1,4 +1,4 @@
-package com.juffman;
+package com.github.aaronbittel;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -107,52 +107,58 @@ public class JuffmanTest {
     @Test
     public void compressAndDecompressEmptyData() throws Exception {
         String content = "";
-        ByteArrayInputStream inputBais = new ByteArrayInputStream(content.getBytes());
-        ByteArrayOutputStream inputBaos = new ByteArrayOutputStream();
 
-        HuffmanEncoder.compress(inputBais, inputBaos);
+        ByteArrayOutputStream compressedBuffer = new ByteArrayOutputStream();
+        HuffmanEncoder.compress(
+            new ByteArrayInputStream(content.getBytes()),
+            compressedBuffer
+        );
 
-        ByteArrayInputStream outBais = new ByteArrayInputStream(
-            inputBaos.toByteArray());
-        ByteArrayOutputStream outBaos = new ByteArrayOutputStream();
+        ByteArrayOutputStream decodedOutput = new ByteArrayOutputStream();
+        HuffmanDecoder.decompress(
+            new ByteArrayInputStream(compressedBuffer.toByteArray()),
+            decodedOutput
+        );
 
-        HuffmanDecoder.decompress(outBais, outBaos);
-
-        assertArrayEquals(content.getBytes(), outBaos.toByteArray());
+        assertArrayEquals(content.getBytes(), decodedOutput.toByteArray());
     }
 
     @Test
     public void compressAndDecompressNoLeftOver() throws Exception {
         String content = "HELLO WORLD";
-        ByteArrayInputStream inputBais = new ByteArrayInputStream(content.getBytes());
-        ByteArrayOutputStream inputBaos = new ByteArrayOutputStream();
 
-        HuffmanEncoder.compress(inputBais, inputBaos);
+        ByteArrayOutputStream compressedBuffer = new ByteArrayOutputStream();
+        HuffmanEncoder.compress(
+            new ByteArrayInputStream(content.getBytes()),
+            compressedBuffer
+        );
 
-        ByteArrayInputStream outBais = new ByteArrayInputStream(
-            inputBaos.toByteArray());
-        ByteArrayOutputStream outBaos = new ByteArrayOutputStream();
+        ByteArrayOutputStream decodedOutput = new ByteArrayOutputStream();
+        HuffmanDecoder.decompress(
+            new ByteArrayInputStream(compressedBuffer.toByteArray()),
+            decodedOutput
+        );
 
-        HuffmanDecoder.decompress(outBais, outBaos);
-
-        assertArrayEquals(content.getBytes(), outBaos.toByteArray());
+        assertArrayEquals(content.getBytes(), decodedOutput.toByteArray());
     }
 
     @Test
     public void compressAndDecompressWithLeftOver() throws Exception {
         String content = "ABACBACBABCABCABCBACBACBA";
-        ByteArrayInputStream inputBais = new ByteArrayInputStream(content.getBytes());
-        ByteArrayOutputStream inputBaos = new ByteArrayOutputStream();
 
-        HuffmanEncoder.compress(inputBais, inputBaos);
+        ByteArrayOutputStream compressedBuffer = new ByteArrayOutputStream();
+        HuffmanEncoder.compress(
+            new ByteArrayInputStream(content.getBytes()),
+            compressedBuffer
+        );
 
-        ByteArrayInputStream outBais = new ByteArrayInputStream(
-            inputBaos.toByteArray());
-        ByteArrayOutputStream outBaos = new ByteArrayOutputStream();
+        ByteArrayOutputStream decodedOutput = new ByteArrayOutputStream();
+        HuffmanDecoder.decompress(
+            new ByteArrayInputStream(compressedBuffer.toByteArray()),
+            decodedOutput
+        );
 
-        HuffmanDecoder.decompress(outBais, outBaos);
-
-        assertArrayEquals(content.getBytes(), outBaos.toByteArray());
+        assertArrayEquals(content.getBytes(), decodedOutput.toByteArray());
     }
 
     private static HuffmanCode HuffmanCodeFromString(String input) {

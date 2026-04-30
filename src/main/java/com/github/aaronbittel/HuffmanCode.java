@@ -1,4 +1,4 @@
-package com.juffman;
+package com.github.aaronbittel;
 
 public record HuffmanCode(int bits, int size) {
     public boolean get(int index) {

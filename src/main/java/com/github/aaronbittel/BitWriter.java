@@ -1,4 +1,4 @@
-package com.juffman;
+package com.github.aaronbittel;
 
 import java.io.DataOutputStream;
 import java.io.IOException;

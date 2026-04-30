@@ -1,4 +1,4 @@
-package com.juffman;
+package com.github.aaronbittel;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

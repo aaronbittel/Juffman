@@ -1,7 +1,8 @@
-package com.juffman;
+package com.github.aaronbittel;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 
@@ -13,8 +14,10 @@ public class FrequencyTableTest {
     @Test
     public void writeFrequencyTableHeader() throws Exception {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+        DataOutputStream out = new DataOutputStream(baos);
         FrequencyTable table = sampleFrequencyTable();
-        table.writeTo(baos);
+        table.writeTo(out);
 
         ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
         try (DataInputStream in = new DataInputStream(bais)) {
@@ -63,10 +66,12 @@ public class FrequencyTableTest {
         FrequencyTable expectedTable = sampleFrequencyTable();
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        expectedTable.writeTo(baos);
+        DataOutputStream out = new DataOutputStream(baos);
+        expectedTable.writeTo(out);
 
         ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
-        FrequencyTable actualTable = FrequencyTable.readFrom(bais);
+        DataInputStream in = new DataInputStream(bais);
+        FrequencyTable actualTable = FrequencyTable.readFrom(in);
 
         assertEquals(expectedTable, actualTable);
     }
@@ -82,11 +87,12 @@ public class FrequencyTableTest {
             assertEquals(1, table.get(i));
         }
 
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        DataOutputStream out = new DataOutputStream(baos);
         table.writeTo(out);
 
-        ByteArrayInputStream baos = new ByteArrayInputStream(out.toByteArray());
-        DataInputStream in = new DataInputStream(baos);
+        ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
+        DataInputStream in = new DataInputStream(bais);
 
         assertEquals('H', in.readUnsignedByte());
         assertEquals('U', in.readUnsignedByte());

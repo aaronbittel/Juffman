@@ -1,7 +1,7 @@
-package com.juffman;
+package com.github.aaronbittel;
 
-import com.juffman.cli.ArgParser;
-import com.juffman.cli.Command;
+import com.github.aaronbittel.cli.ArgParser;
+import com.github.aaronbittel.cli.Command;
 
 public class Juffman {
     static void main(String[] args) {

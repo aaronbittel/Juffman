@@ -1,4 +1,4 @@
-package com.juffman;
+package com.github.aaronbittel;
 
 public class HuffmanCodeBuilder {
 

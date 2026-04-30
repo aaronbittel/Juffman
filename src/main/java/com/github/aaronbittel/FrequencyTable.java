@@ -1,10 +1,8 @@
-package com.juffman;
+package com.github.aaronbittel;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.InputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.util.Arrays;
 
 public class FrequencyTable {
@@ -107,8 +105,7 @@ public class FrequencyTable {
         return new FrequencyTable(frequencies);
     }
 
-    public void writeTo(OutputStream stream) throws IOException {
-        DataOutputStream out = new DataOutputStream(stream);
+    public void writeTo(DataOutputStream out) throws IOException {
         // magic
         out.writeByte((byte)'H');
         out.writeByte((byte)'U');
@@ -140,8 +137,7 @@ public class FrequencyTable {
         }
     }
 
-    public static FrequencyTable readFrom(InputStream stream) throws IOException {
-        DataInputStream in = new DataInputStream(stream);
+    public static FrequencyTable readFrom(DataInputStream in) throws IOException {
         if (in.readUnsignedByte() != 'H'
             || in.readUnsignedByte() != 'U'
             || in.readUnsignedByte() != 'F')
@@ -218,8 +214,8 @@ public class FrequencyTable {
         return sb.toString();
     }
 
-    public void dump(OutputStream stream) throws IOException {
-        DataOutputStream out = new DataOutputStream(stream);
+    @SuppressWarnings("unused")
+    public void dump(DataOutputStream out) throws IOException {
         for (int i = 0; i < getSize(); ++i) {
             long freq = get(i);
             if (freq > Integer.MAX_VALUE) {

@@ -1,4 +1,4 @@
-package com.juffman.cli;
+package com.github.aaronbittel.cli;
 
 public sealed interface Command
     permits

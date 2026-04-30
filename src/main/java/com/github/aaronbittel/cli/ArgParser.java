@@ -1,4 +1,4 @@
-package com.juffman.cli;
+package com.github.aaronbittel.cli;
 
 import java.nio.file.Path;
 

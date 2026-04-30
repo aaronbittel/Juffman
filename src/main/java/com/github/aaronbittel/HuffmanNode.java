@@ -1,4 +1,4 @@
-package com.juffman;
+package com.github.aaronbittel;
 
 public record HuffmanNode(Byte value, long count, HuffmanNode left, HuffmanNode right) {
 
