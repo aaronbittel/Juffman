@@ -7,5 +7,5 @@ public sealed interface Command
         Help,
         Version {
 
-    void execute() throws Exception;
+    public abstract void execute() throws Exception;
 }

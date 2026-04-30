@@ -1,11 +1,11 @@
 package com.github.aaronbittel.cli;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import com.github.aaronbittel.HuffmanDecoder;
 

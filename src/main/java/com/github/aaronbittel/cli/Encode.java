@@ -1,9 +1,9 @@
 package com.github.aaronbittel.cli;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import com.github.aaronbittel.HuffmanEncoder;
 

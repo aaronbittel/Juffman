@@ -6,7 +6,7 @@ import java.io.IOException;
 import java.util.Arrays;
 
 public class FrequencyTable {
-    enum FrequencyFormat {
+    static enum FrequencyFormat {
 
         BYTE(1) {
             @Override

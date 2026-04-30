@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<!DOCTYPE module PUBLIC
+"-//Puppy Crawl//DTD Check Configuration 1.3//EN"
+"https://checkstyle.org/dtds/configuration_1_3.dtd">
+<module name="Checker">
+    <module name="TreeWalker">
+        <!-- ANNOTATIONS -->
+        <module name="MissingOverride"/>
+
+        <!-- BLOCK CHECKS -->
+        <module name="EmptyBlock"/>
+
+        <!-- CODING -->
+        <module name="DeclarationOrder"/>
+        <module name="SimplifyBooleanExpression"/>
+        <module name="SimplifyBooleanReturn"/>
+        <module name="UnusedCatchParameterShouldBeUnnamed"/>
+        <module name="UnusedLambdaParameterShouldBeUnnamed"/>
+        <module name="UnusedLocalVariable"/>
+        <module name="UseEnhancedSwitch"/>
+        <module name="WhenShouldBeUsed"/>
+
+        <!-- IMPORTS -->
+        <module name="AvoidStarImport"/>
+        <module name="ImportOrder">
+            <property name="caseSensitive" value="false"/>
+            <property name="groups" value="/^java\./, com.github.aaronbittel"/>
+            <property name="ordered" value="true"/>
+            <property name="separated" value="true"/>
+            <property name="option" value="top"/>
+            <property name="sortStaticImportsAlphabetically" value="true"/>
+        </module>
+        <module name="RedundantImport"/>
+        <module name="UnusedImports"/>
+
+        <!-- MODIFIERS -->
+        <module name="ClassMemberImpliedModifier"/>
+        <module name="InterfaceMemberImpliedModifier"/>
+        <module name="ModifierOrder"/>
+        <module name="RedundantModifier">
+            <property name="tokens" value="VARIABLE_DEF, ANNOTATION_FIELD_DEF"/>
+        </module>
+
+        <!-- NAMING CONVENTIONS -->
+        <module name="ConstantName"/>
+
+
+    </module>
+</module>
