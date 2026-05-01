@@ -13,14 +13,8 @@ public class ArgParser {
 
         for (String arg : args) {
             switch (arg) {
-                case "--help":
-                case "-h":
-                    help = true;
-                    break;
-                case "--version":
-                case "-v":
-                    version = true;
-                    break;
+                case "--help"   , "-h" -> help    = true;
+                case "--version", "-v" -> version = true;
             }
         }
 
@@ -55,7 +49,10 @@ public class ArgParser {
         for (int i = 1; i < args.length; i++) {
             switch (args[i]) {
                 case "-i", "--input" -> {
-                    input = Path.of(requireValue(args, i, "input"));
+                    String value = requireValue(args, i, "input");
+                    if (!value.equals("-")) {
+                        input = Path.of(value);
+                    }
                     i++;
                 }
                 case "-o", "--output" -> {
@@ -63,14 +60,6 @@ public class ArgParser {
                     i++;
                 }
             }
-        }
-
-        if (input == null) {
-            throw new IllegalArgumentException("Missing input file");
-        }
-
-        if (output == null) {
-            throw new IllegalArgumentException("Missing output file");
         }
 
         return new Encode(input, output);
@@ -91,14 +80,6 @@ public class ArgParser {
                     i++;
                 }
             }
-        }
-
-        if (input == null) {
-            throw new IllegalArgumentException("Missing input file");
-        }
-
-        if (output == null) {
-            throw new IllegalArgumentException("Missing output file");
         }
 
         return new Decode(input, output);

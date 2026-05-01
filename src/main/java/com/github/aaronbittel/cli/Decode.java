@@ -1,9 +1,7 @@
 package com.github.aaronbittel.cli;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -15,19 +13,25 @@ public record Decode(Path inputPath, Path outputPath) implements Command {
     public void execute() throws Exception {
         long start = System.nanoTime();
 
-        try (DataInputStream in = new DataInputStream(
-            new BufferedInputStream(Files.newInputStream(inputPath))))
-        {
-            try(DataOutputStream out = new DataOutputStream(
-                new BufferedOutputStream(Files.newOutputStream(outputPath))))
-            {
+        InputStream in = inputPath == null
+            ? System.in
+            : Files.newInputStream(inputPath);
+
+        OutputStream out = outputPath == null
+            ? System.out
+            : Files.newOutputStream(outputPath);
+
+        try(in) {
+            try(out) {
                 HuffmanDecoder.decompress(in, out);
             }
         }
 
         long end = System.nanoTime();
 
-        System.out.printf("[INFO] Decoded `%s` into `%s`%n", inputPath, outputPath);
+        if (inputPath != null && outputPath != null) {
+            System.out.printf("[INFO] Decoded `%s` into `%s`%n", inputPath, outputPath);
+        }
         System.out.printf(
             "[INFO] Took %.5f seconds%n", (end - start) / 1_000_000_000.0);
     }
